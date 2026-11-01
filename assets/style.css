@@ -261,3 +261,4 @@ footer.site { border-top: 1px solid var(--rule); padding-block: 26px 40px; color
 .prose > *, .outline > *, .block > *, .wbody > *, .field > * { min-width: 0; max-width: 100%; }
 .mathblock .katex-display { margin: 0; }
 .widget svg { max-width: 680px; }
+.scrolly .steps, .scrolly .step, .scrolly .step .card, .scrolly .step .card > * { min-width: 0; max-width: 100%; }

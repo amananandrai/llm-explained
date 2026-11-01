@@ -8,7 +8,7 @@
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Which modules have a full interactive build (the beta: Parts 1–2).
-  LLM.LIVE = ['0', '0-kl', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  LLM.LIVE = ['0', '0-kl'].concat(Array.from({ length: 41 }, (_, i) => String(i + 1)));
   LLM.EMERGING = ['10', '11', '15', '17', '18'];
   LLM.ORDER = ['0', '0-kl'].concat(Array.from({ length: 41 }, (_, i) => String(i + 1)));
   LLM.TITLES = { '0-kl': 'KL divergence: forward vs reverse' };
