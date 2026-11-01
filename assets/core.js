@@ -194,8 +194,9 @@
     function draw(series, opt = {}) {
       clear(g);
       const xs = series.flatMap((sr) => sr.pts.map((p) => p[0])), ys = series.flatMap((sr) => sr.pts.map((p) => p[1]));
-      const x0 = opt.xmin ?? Math.min(...xs), x1 = opt.xmax ?? Math.max(...xs);
+      let x0 = opt.xmin ?? Math.min(...xs), x1 = opt.xmax ?? Math.max(...xs);
       let y0 = opt.ymin ?? Math.min(...ys), y1 = opt.ymax ?? Math.max(...ys);
+      if (x1 === x0) { x1 = x0 + 1; }
       if (y1 === y0) y1 = y0 + 1;
       const logx = opt.logx, logy = opt.logy;
       const fx = (x) => m.l + ((logx ? Math.log10(x) - Math.log10(x0) : x - x0) / (logx ? Math.log10(x1) - Math.log10(x0) : x1 - x0)) * (W - m.l - m.r);
@@ -390,7 +391,7 @@
   function modCard(id) {
     const live = LLM.LIVE.includes(id);
     return h('a', { class: 'mod-card', href: '#m' + id },
-      h('span', { class: 'num' }, h('span', null, id === '0-kl' ? 'M0 · sub-page' : 'M' + id), live ? h('span', { class: 'badge live' }, 'Interactive') : LLM.EMERGING.includes(id) ? h('span', { class: 'badge emerging' }, 'Emerging · outline') : h('span', { class: 'badge queued' }, 'Outline')),
+      h('span', { class: 'num' }, h('span', null, id === '0-kl' ? 'M0 · sub-page' : 'M' + id), LLM.EMERGING.includes(id) ? h('span', { class: 'badge emerging' }, 'Emerging') : live ? h('span', { class: 'badge live' }, 'Interactive') : h('span', { class: 'badge queued' }, 'Outline')),
       h('span', { class: 't' }, title(id)), h('span', { class: 'lbl muted', style: { fontSize: '.8rem', fontFamily: 'var(--f-mono)' } }, live ? 'Hero animation · widgets · quiz' : 'Plan, maths & reading list'));
   }
   function curriculum() {
@@ -438,7 +439,7 @@
       heroAttention()));
     root.appendChild(h('section', { class: 'wrap section' }, h('h2', null, 'How every page works'), h('p', null, 'Each module follows one template: a hook question, a scroll-driven picture, the mechanics, the maths, a widget you control, an honest note on what the picture leaves out, and a three-question check.'),
       h('ol', { class: 'principles' }, [['Picture first, symbol second', 'Equations sit beside the animation that computes them, in matching colours.'], ['One idea per scroll step', 'Animations advance with you and never autoplay past you.'], ['Real numbers at toy scale', 'Small vectors and short sentences, so every value fits on screen.'], ['Touch the knob', 'Every module has at least one widget you control.'], ['Three depths', 'Switch between Intuition, Mechanics and Maths on any page.'], ['Honest limits', 'Each module ends with what its picture leaves out.']].map(([b, t], i) => h('li', null, h('span', { class: 'n' }, String(i + 1)), h('span', null, h('b', null, b), '. ', t))))));
-    root.appendChild(h('section', { class: 'wrap section', id: 'curriculum' }, h('h2', null, 'Curriculum'), h('p', null, `Parts 1 and 2 are a strict sequence and everything after builds on Module 5. ${liveCount} pages are fully interactive in this beta; the rest show their complete plan while their widgets are built.`), curriculum()));
+    root.appendChild(h('section', { class: 'wrap section', id: 'curriculum' }, h('h2', null, 'Curriculum'), h('p', null, `Parts 1 and 2 are a strict sequence and everything after builds on Module 5. All ${liveCount} pages are interactive: each has a scroll-driven hero animation, widgets you control and a three-question check.`), curriculum()));
     root.appendChild(legendSection());
     return root;
   }

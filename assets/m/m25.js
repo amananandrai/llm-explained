@@ -3,7 +3,7 @@
   const N = (id, x, y, w, label, sub, color, shape) => ({ id, x, y, w, h: 40, label, sub, color, shape });
   const nodes = [
     N('q', 10, 150, 80, 'question', '', 'var(--q)', 'pill'),
-    N('rw', 110, 150, 90, 'rewrite', 'HyDE, multi-query', 'var(--q)'),
+    N('rw', 104, 150, 106, 'rewrite', 'HyDE, multi-query', 'var(--q)'),
     N('agent', 110, 40, 90, 'agent', 'decides, loops', 'var(--k)'),
     N('dense', 230, 100, 90, 'dense', 'vector search', 'var(--t5)', 'cyl'),
     N('bm25', 230, 200, 90, 'BM25', 'keywords', 'var(--t5)', 'cyl'),
