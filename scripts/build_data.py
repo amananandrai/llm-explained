@@ -65,6 +65,27 @@ for row in table(buf)["rows"]:
     rng = range(int(ids[0]), int(ids[-1]) + 1)
     for k in rng: pap.setdefault(str(k), []).append({"label": row[0], "refs": row[1]})
 
+# apply verified links (plan/paper-links.json) to reference text
+links = json.loads((root / "plan/paper-links.json").read_text())
+A = lambda label, url: f'<a href="{url}" target="_blank" rel="noopener">{label}</a>'
+missing = set()
+for k, rows in pap.items():
+    for row in rows:
+        out_refs = []
+        for ref in row["refs"].split("; "):
+            plain = re.sub(r"<[^>]+>", "", ref)
+            v = links.get(plain)
+            if v is None:
+                if '<a ' not in ref: missing.add(plain)
+                out_refs.append(ref)
+            elif isinstance(v, str):
+                out_refs.append(A(plain, v))
+            else:
+                out_refs.append("; ".join(A(l, u) for l, u in v))
+        row["refs"] = "; ".join(out_refs)
+if missing:
+    print("WARNING: no link for:", *sorted(missing), sep="\n  ")
+
 out = {"parts": parts, "modules": {m["id"]: m for m in modules}, "papers": pap}
 (root / "assets/data.js").write_text("window.PLAN = " + json.dumps(out, ensure_ascii=False) + ";\n")
 print(len(parts), "parts,", len(modules), "modules,", len(pap), "paper rows")

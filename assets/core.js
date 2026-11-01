@@ -357,7 +357,7 @@
     if (def.tryit && def.tryit.length) root.appendChild(block('Try it', def.tryitSub || 'Every widget computes its numbers live in your browser.', def.tryit.map((f) => f())));
     if (def.leaves) root.appendChild(h('section', { class: 'block' }, h('div', { class: 'leaves' }, h('h3', null, 'What this picture leaves out'), h('ul', null, def.leaves.map((l) => h('li', null, rich(l)))))));
     if (def.quiz) root.appendChild(block('Check yourself', 'Three questions. Pick an answer to see why.', quiz(def.quiz)));
-    root.appendChild(block('Further reading', 'Primary sources for this module, from the build plan’s reference list.', readingList(id, def.reading)));
+    root.appendChild(block('Further reading', 'Primary sources for this module, from the build plan’s reference list. Links checked November 2026.', readingList(id, def.reading)));
     root.appendChild(pager(id));
     return root;
   }
@@ -381,7 +381,7 @@
     m.code.forEach((c) => out.appendChild(h('pre', { class: 'code' }, c)));
     if (m.maths.length) out.appendChild(h('section', { class: 'field' }, h('h3', null, 'Core maths'), m.maths.map((x) => tex(x))));
     root.appendChild(out);
-    root.appendChild(block('Further reading', 'Primary sources from the build plan’s reference list (to be verified and linked when the module is written).', readingList(id)));
+    root.appendChild(block('Further reading', 'Primary sources from the build plan’s reference list. Links checked November 2026.', readingList(id)));
     root.appendChild(pager(id));
     return root;
   }

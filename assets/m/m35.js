@@ -23,7 +23,7 @@
   }
 
   function cardBuilder() {
-    const w = widget('Agent card builder', 'Try it', 'Field names follow the A2A AgentCard in the published specification; check the current version for required fields.');
+    const w = widget('Agent card builder', 'Try it', 'Field names follow the A2A AgentCard as of spec v0.3; v1.0 is now current, so check the latest specification for required fields.');
     const f = { name: 'Invoice Checker', description: 'Checks supplier invoices against purchase orders and flags mismatches.', url: 'https://agents.example.com/invoice', streaming: true, skill: 'Match invoice to PO', tags: 'finance, invoices', auth: 'oauth2' };
     const form = h('div', { class: 'ctl-row' }); const pre = h('pre', { class: 'code' }); const ro = readout();
     Object.entries(f).forEach(([k, v]) => { const id = 'ac-' + k; form.appendChild(h('div', { class: 'ctl' }, h('label', { for: id }, k), typeof v === 'boolean' ? h('select', { id, onchange: (e) => { f[k] = e.target.value === 'true'; draw(); } }, h('option', { value: 'true', selected: v }, 'true'), h('option', { value: 'false', selected: !v }, 'false')) : h('input', { type: 'text', id, value: v, oninput: (e) => { f[k] = e.target.value; draw(); } }))); });

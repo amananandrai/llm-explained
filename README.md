@@ -16,7 +16,8 @@ A scroll-driven, interactive course on how large language models work, built fro
 python3 -m http.server 8765         # then open http://localhost:8765/dev.html
 ```
 
-Edit the plan and regenerate the data with `python3 scripts/build_data.py`.
+Edit the plan and regenerate the data with `python3 scripts/build_data.py`. Paper links live in
+`plan/paper-links.json` (keyed by the reference text in the plan); the script warns about any reference without a link.
 
 ## Layout
 
