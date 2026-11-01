@@ -1,5 +1,7 @@
 # LLM Explained
 
+**Live site: https://llm-explained-lovat.vercel.app/**
+
 A scroll-driven, interactive course on how large language models work, built from `plan/build-plan.md`.
 
 ## What is here
