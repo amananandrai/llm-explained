@@ -1,0 +1,686 @@
+# LLM Explained — Website Build Plan
+
+Nov 2, 2026 · @aman
+
+## Vision and audience
+
+Build a free, scroll-driven site of 42 modules that takes a reader from "why RNNs hit a wall" to "how a production agent retrieves, reasons, acts and is evaluated", showing every concept as an interactive picture before its equation.
+
+- **Primary reader:** software engineers and students who know some Python and school-level maths.
+- **Secondary reader:** ML practitioners who want the maths and architecture details in one place.
+- **Three depths per page**, switched by a toggle: *Intuition* (pictures, no symbols), *Mechanics* (tensor shapes, step by step), *Maths* (full derivations).
+- **Success test:** a reader who finishes Module 7 can sketch a decoder block and estimate its parameter count within 10%; one who finishes Module 36 can sketch a RAG agent's harness and name where it can fail.
+
+**Learning principles**
+
+1. Picture first, symbol second: each equation sits beside the animation that computes it, in matching colours.
+2. One idea per scroll step: animations advance with the reader and never autoplay past them.
+3. Real numbers at toy scale: 4-dimensional embeddings and 3–5 token sentences, so every value fits on screen.
+4. Touch the knob: every module has at least one widget the reader controls.
+5. Run it yourself: optional in-browser NumPy cells reproduce each figure.
+6. Honest limits: each module ends with a "what this picture leaves out" box.
+
+## Curriculum map
+
+The site runs as 42 modules in seven parts; Parts 1 and 2 are a strict sequence, and everything after builds on Module 5.
+
+&#91;embedded content: curriculum map · 14 modules in 4 parts\]
+
+Read top to bottom: Parts 3, 4 and 7 can be read in any order within the part, Part 5 runs in pipeline order, and Part 6 starts with Module 27.
+
+## Module plan
+
+Each module follows one page template: hook question, Intuition, Mechanics, Maths (collapsible), Try it, What this leaves out, a 3-question quiz, further reading. Below, each module lists what it covers, its core maths, one hero animation and its interactive widgets.
+
+### Part 1 · Foundations: how text becomes numbers
+
+#### Module 0 · Maths primer (optional)
+
+- **Covers:** vectors as arrows, dot product as similarity, matrix multiply as many dot products, softmax, probability, log-likelihood, cross-entropy, gradient descent.
+- **Hero animation:** two 2-D arrows rotate while their dot product and cosine update live; then a row × column multiply lights up cell by cell.
+- **Interactives:** drag-the-vectors dot-product playground; softmax bar chart with a temperature slider; a ball rolling down a loss surface.
+
+```latex
+\mathrm{softmax}(z)_i=\frac{e^{z_i}}{\sum_j e^{z_j}},\qquad \mathcal{L}_{CE}=-\sum_i y_i\log p_i
+```
+
+**Module 0 sub-page · KL divergence: forward vs reverse**
+
+- **Covers:** KL divergence as the extra cost of describing data from P using a model Q; why it is not symmetric; **forward KL** KL(P‖Q) is *mean-seeking* (mass-covering): Q stretches to cover every mode of P, the behaviour behind maximum-likelihood pretraining and standard distillation; **reverse KL** KL(Q‖P) is *mode-seeking* (zero-forcing): Q locks onto one mode and ignores the rest, the behaviour behind the RLHF penalty to a reference model and on-policy distillation.
+- **Hero animation:** a two-humped target P; one Gaussian Q is fitted twice; under forward KL it widens to straddle both humps, under reverse KL it snaps onto one.
+- **Interactives:** drag Q's mean and width and watch both KL values update; toggle which direction is being minimised.
+
+```latex
+D_{\mathrm{KL}}(P\,\|\,Q)=\sum_x P(x)\log\frac{P(x)}{Q(x)}\;\ge 0,\qquad \text{forward: }\min_Q D_{\mathrm{KL}}(P\|Q)\;\;\text{vs}\;\;\text{reverse: }\min_Q D_{\mathrm{KL}}(Q\|P)
+```
+
+#### Module 1 · How models learn: training terms
+
+- **Covers:** a model as a function with parameters; loss functions (squared error, cross-entropy); gradient descent; **backpropagation** as the chain rule run backwards over a computation graph; mini-batches, steps, **epochs** (and why LLM pretraining often sees each token about once); learning rate, warm-up and cosine decay; optimisers (SGD, momentum, Adam, AdamW, weight decay); overfitting, train/validation/test splits, dropout and early stopping; gradient clipping, gradient accumulation and activation checkpointing; mixed precision (FP16, BF16). RLHF is introduced here by name and taught in Module 8.
+- **Hero animation:** a tiny two-layer network; the forward pass flows left to right in blue, the loss lights up, then gradients flow right to left in orange with each weight's gradient shown; an epoch counter then cycles mini-batches across a dataset strip.
+- **Interactives:** micro-autograd playground (build an expression, see each node's gradient); learning-rate slider on a loss landscape showing divergence vs crawl; steps calculator (dataset size, batch size, epochs → optimiser steps).
+
+```latex
+\theta_{t+1}=\theta_t-\eta\,\nabla_\theta\mathcal{L}(\theta_t),\qquad \frac{\partial\mathcal{L}}{\partial w}=\frac{\partial\mathcal{L}}{\partial y}\cdot\frac{\partial y}{\partial w},\qquad \text{steps}=\text{epochs}\times\left\lceil\frac{N}{B}\right\rceil
+```
+
+#### Module 2 · Why transformers were needed
+
+- **Covers:** language modelling as next-word prediction; n-grams; RNNs and LSTMs; seq2seq with one fixed context vector; Bahdanau attention as the bridge.
+- **The three limits:** sequential computation (no parallelism over time), vanishing or exploding gradients over long spans, and the single-vector information bottleneck.
+- **Hero animation:** a sentence enters an RNN one word at a time while a memory bar fades for early words; then the same sentence enters a transformer, all words lighting up at once with attention lines.
+- **Interactives:** sequence-length slider showing gradient magnitude decay (0.9 to the power T); GPU timeline comparing sequential and parallel processing.
+
+```latex
+h_t=\tanh(W_h h_{t-1}+W_x x_t+b),\qquad \frac{\partial h_T}{\partial h_1}=\prod_{t=2}^{T}\frac{\partial h_t}{\partial h_{t-1}}
+```
+
+#### Module 3 · Tokenisation
+
+- **Covers:** why not characters or words; BPE; WordPiece; Unigram and SentencePiece; byte-level BPE; special tokens; vocabulary-size trade-offs; token counts across languages; failure cases (numbers, spelling, leading spaces, glitch tokens).
+- **Maths:** BPE greedily merges the most frequent adjacent pair; Unigram picks the segmentation that maximises the sum of log token probabilities.
+- **Hero animation:** BPE training on a tiny corpus, characters merging pair by pair into longer tokens while a frequency table updates beside them.
+- **Interactives:** live tokenizer playground (type text, see coloured tokens and IDs from 2–3 real tokenizers side by side); one sentence in English, Hindi and Python compared by token count; vocab-size slider trading sequence length against embedding-table size.
+
+#### Module 4 · Embeddings
+
+- **Covers:** one-hot vs dense vectors; the embedding table as a lookup; what geometry encodes (clusters, analogy arithmetic and where it breaks); adding position.
+- **Types of embeddings**, each with its own sub-page:
+  - Static word embeddings: word2vec (skip-gram, CBOW), GloVe, fastText subwords.
+  - Contextual token embeddings: hidden states inside BERT or GPT, so "bank" gets different vectors in different sentences.
+  - Positional embeddings: sinusoidal, learned absolute, relative, RoPE, ALiBi.
+  - Sentence and document embeddings: pooling plus contrastive training, used for search.
+  - Sparse, dense and multi-vector: BM25 and SPLADE, single dense vectors, ColBERT late interaction.
+  - Matryoshka and quantised (int8, binary) embeddings for cheap storage.
+  - Multimodal embeddings: CLIP's shared text–image space.
+- **Hero animation:** a 3-D embedding space where king − man + woman lands near queen; then "bank" splits into two points as its context changes from river to money.
+- **Interactives:** RoPE dial showing the angle between two tokens stays fixed when both shift; Matryoshka truncation slider with retrieval quality; 2-D projection explorer of real embeddings.
+
+```latex
+\mathrm{RoPE}:\ \begin{pmatrix}x'_{2i}\\x'_{2i+1}\end{pmatrix}=\begin{pmatrix}\cos m\theta_i&-\sin m\theta_i\\\sin m\theta_i&\cos m\theta_i\end{pmatrix}\begin{pmatrix}x_{2i}\\x_{2i+1}\end{pmatrix},\quad \theta_i=10000^{-2i/d}
+```
+
+### Part 2 · The Transformer and GPTs
+
+#### Module 5 · Attention and the transformer block
+
+- **Covers:** queries, keys and values; scaled dot-product attention; why divide by the square root of d\_k; multi-head attention; causal masking; the residual stream; LayerNorm vs RMSNorm, pre-norm vs post-norm; the feed-forward network (GELU, SwiGLU); counting parameters and FLOPs per block; why very deep stacks degrade (information dilution in the residual stream, rank collapse, attention-entropy collapse) and how residuals and normalisation fight it.
+- **Maths:** the variance argument for the √d\_k scale; parameters per layer ≈ 12·d² (4d² attention + 8d² MLP at 4× expansion).
+- **Hero animation:** a 5-token attention matrix fills cell by cell; heads split into colours; each output vector assembles as a weighted sum of value vectors.
+- **Interactives:** tensor-shape stepper (\[batch, seq, d\_model\] → \[batch, heads, seq, d\_head\] and back); head viewer with attention patterns precomputed from a small real model; a "remove √d\_k" toggle that shows softmax saturating.
+
+```latex
+\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}+M\right)V,\qquad Q=XW_Q,\;K=XW_K,\;V=XW_V
+```
+
+#### Module 6 · Encoder, decoder and encoder–decoder
+
+- **Covers:** the original 2017 encoder–decoder; bidirectional encoders (BERT, masked LM); decoder-only models (GPT, causal LM); encoder–decoder models (T5, BART, span corruption); cross-attention; which shape suits classification, translation or open generation; why decoder-only won for general-purpose LLMs.
+- **Maths:** masked-LM loss over masked positions vs causal-LM loss over every next token; the mask matrix for each design.
+- **Hero animation:** three towers side by side with their attention masks drawn as a full square, a lower triangle, and a square plus triangle joined by a cross-attention bridge.
+- **Interactives:** mask painter (toggle mask cells and see which tokens can see each other); task picker that highlights the matching architecture.
+
+#### Module 7 · GPTs: from pretraining to generation
+
+- **Covers:** next-token prediction; logits → probabilities → sampling loop; greedy, temperature, top-k, top-p and beam search; the KV cache; pretraining data (web crawls, deduplication, quality filtering, synthetic data, data mixtures) and compute; scaling laws (Kaplan, Chinchilla); the KV cache as the bridge to Modules 10–11; a preview of post-training (Module 8).
+- **Maths:** cross-entropy and perplexity; temperature-scaled softmax; training compute ≈ 6·N·D FLOPs; Chinchilla's \~20 tokens per parameter; KV-cache bytes = 2 × layers × KV heads × d\_head × sequence length × bytes per value.
+- **Hero animation:** the autoregressive loop, one token appended and fed back while probability bars recompute; the KV cache grows as a stack of coloured blocks instead of being recomputed.
+- **Interactives:** sampling lab (temperature, top-k and top-p sliders on a real next-token distribution); scaling-law calculator (parameters and tokens → loss curve and FLOPs); KV-cache memory calculator.
+
+```latex
+P(x_{1:T})=\prod_{t=1}^{T}P(x_t\mid x_{<t}),\qquad \mathrm{PPL}=\exp\!\Big(-\tfrac{1}{T}\sum_{t=1}^{T}\log P(x_t\mid x_{<t})\Big)
+```
+
+#### Module 8 · Post-training: SFT, RLHF, DPO and reasoning
+
+- **Covers:** why a pretrained model is not yet an assistant; supervised fine-tuning on instruction data and chat templates; reward models trained on human preference pairs; **RLHF** with PPO and a KL penalty that keeps the policy near a reference model; RLAIF and constitution-guided feedback; DPO, which skips the reward model; GRPO and RL with verifiable rewards (maths, code, unit tests) for reasoning models; test-time compute and long chains of thought; reward hacking and over-optimisation.
+- **Maths:** Bradley–Terry preference probability; the RLHF objective with its reverse-KL penalty; the DPO loss; GRPO's group-relative advantage.
+- **Hero animation:** a pretrained model's answer distribution, then SFT narrows it, then a reward model scores samples and RL nudges probability towards high-reward answers while a KL "leash" pulls back toward the reference.
+- **Interactives:** preference-labelling game that builds a toy reward model; β slider on the KL leash showing reward vs drift from the reference.
+
+```latex
+\max_{\pi_\theta}\;\mathbb{E}_{x,\,y\sim\pi_\theta}\big[r_\phi(x,y)\big]-\beta\,D_{\mathrm{KL}}\big(\pi_\theta(\cdot\mid x)\,\|\,\pi_{\mathrm{ref}}(\cdot\mid x)\big),\qquad \mathcal{L}_{\mathrm{DPO}}=-\log\sigma\!\Big(\beta\log\tfrac{\pi_\theta(y_w|x)}{\pi_{\mathrm{ref}}(y_w|x)}-\beta\log\tfrac{\pi_\theta(y_l|x)}{\pi_{\mathrm{ref}}(y_l|x)}\Big)
+```
+
+#### Module 9 · Prompt engineering: zero-shot, few-shot and beyond
+
+- **Covers:** zero-shot vs few-shot prompting and in-context learning; choosing, ordering and formatting examples; system prompts and roles; clear instructions, delimiters and where to put long documents; chain-of-thought and self-consistency; asking for structured output (JSON schemas) and constrained decoding; prompt templates and versioning; automatic prompt optimisation (e.g. DSPy-style); how prompt engineering grows into context engineering (Module 28); first look at prompt injection (Module 39).
+- **Hero animation:** one task answered with 0, 1 and 3 examples while an accuracy bar climbs; then the examples are shuffled and the bar wobbles, showing order sensitivity.
+- **Interactives:** few-shot lab (add, remove and reorder examples against a recorded small-model run); prompt diff viewer showing how one changed line changes the output.
+
+### Part 3 · Faster, bigger, smaller (any order)
+
+#### Module 10 · Evolution of attention: MHA vs GQA vs MLA (and LRKV)
+
+- **Covers:** why the KV cache, not FLOPs, limits long-context inference; multi-head attention (MHA); multi-query (MQA); grouped-query (GQA); multi-head latent attention (MLA, introduced in DeepSeek-V2), which caches one small latent per token and re-expands it into keys and values; low-rank KV attention (LRKV, 2026), which keeps one shared full-rank K/V projection plus thin per-head low-rank residuals; FlashAttention (tiling, online softmax, recomputation); sliding-window attention, attention sinks and context extension (RoPE scaling, YaRN).
+- **How MLA fixes the RoPE headache:** MLA saves memory by folding the key up-projection into the query at inference, so keys never need rebuilding. RoPE breaks this because it rotates each key by its position, and a position-dependent rotation cannot be folded into a fixed matrix. The fix is *decoupled RoPE*: a small separate key part carries the rotation and is cached beside the latent, while the large position-free part stays foldable.
+
+| Method | Cached per token, per layer | Trade-off |
+| --- | --- | --- |
+| MHA | 2 × H × d\_head | Full head diversity, largest cache |
+| MQA | 2 × d\_head | Smallest simple cache, heads lose diversity |
+| GQA | 2 × G × d\_head (G groups) | The common middle ground |
+| MLA | d\_latent + d\_rope | Very small cache, extra up-projection maths |
+| LRKV | about 2 × (d\_head + H × r) | Shared base plus per-head low-rank detail |
+
+- **Hero animation:** "evolution of attention": eight query heads each with its own K/V column (MHA); the columns merge into two (GQA), then one (MQA); then MLA squeezes K and V into a thin latent bar that expands on read; LRKV shows one shared bar plus thin per-head slivers; a memory meter falls at each step.
+- **Interactives:** KV-cache calculator by method (layers, heads, d\_head, latent size, context, batch); RoPE absorption demo that rotates a key and shows exactly where folding breaks, then switches on the decoupled path; FlashAttention tile-by-tile replay.
+
+```latex
+c^{KV}_t=W^{DKV}h_t,\quad k^{C}_{t}=W^{UK}c^{KV}_t,\quad v^{C}_{t}=W^{UV}c^{KV}_t,\quad k^{R}_t=\mathrm{RoPE}(W^{KR}h_t),\quad k_{t,i}=\big[k^{C}_{t,i};\,k^{R}_t\big]
+```
+
+#### Module 11 · Taming the KV cache: three families of tricks
+
+- **Covers:** what the KV cache stores and why it grows with layers × context × batch; then three families of fixes:
+  1. **Architectural magic** (make less cache): MHA vs GQA vs MLA and LRKV, recapped from Module 10.
+  2. **Shrinking spells** (store each value in fewer bits): FP8 and FP4 caches; KIVI-style per-channel key quantisation; TurboQuant (Google Research, 2026), about 3 bits per value without retraining.
+  3. **System tricks** (waste less memory and compute): PagedAttention, which stores the cache in fixed-size blocks like operating-system pages so nothing fragments and sequences can share blocks; prefix caching, which reuses the cache for a shared prompt prefix such as a long system prompt; continuous batching; chunked prefill; speculative decoding; cache offloading and eviction.
+- **Maths:** KV bytes = 2 × layers × KV heads × d\_head × tokens × batch × bytes per value; speculative-decoding speed-up as a function of the acceptance rate.
+- **Hero animation:** a GPU memory bar fills with KV blocks; three "spells" fire in turn: architecture thins each token's slice, quantisation shrinks the bytes, paging closes the fragmentation gaps and prefix sharing merges identical prompt blocks; a counter shows how many more users now fit.
+- **Interactives:** "will this context fit" calculator combining all three families; PagedAttention block-table visualiser; prefix-cache hit-rate demo with a shared system prompt; speculative-decoding acceptance-rate slider.
+
+#### Module 12 · Mixture of experts
+
+- **Covers:** dense vs sparse feed-forward layers; the router; top-k selection; total vs active parameters; load-balancing loss and auxiliary-loss-free balancing; capacity factor and token dropping; shared and fine-grained experts; expert parallelism and all-to-all traffic; why MoE saves compute but not memory at inference.
+- **Maths:** gate probabilities from a softmax over router logits; output as the gate-weighted sum of the top-k experts; balance loss α·N·Σ fᵢ·Pᵢ.
+- **Hero animation:** tokens stream into a router and each splits to 2 of 8 expert boxes that glow with load; an unbalanced run shows one expert overflowing and dropping tokens.
+- **Interactives:** router playground (number of experts, top-k, balance loss on or off → utilisation histogram); total-vs-active parameter calculator using real model configs.
+
+```latex
+y=\sum_{i\in\mathrm{TopK}(g(x),\,k)} g_i(x)\,E_i(x),\qquad g(x)=\mathrm{softmax}(W_r\,x)
+```
+
+#### Module 13 · Scaling training: parallelism, ZeRO and FSDP
+
+- **Covers:** where training memory goes (weights, gradients, optimiser states, activations: about 16 bytes per parameter with Adam in mixed precision, before activations); collective operations (all-reduce, all-gather, reduce-scatter, all-to-all); **data parallelism**; **ZeRO** stages 1–3 (shard optimiser states, then gradients, then parameters), FSDP, and ZeRO-Offload; **tensor parallelism** (splitting each matrix across GPUs); **pipeline parallelism** (layers across GPUs, micro-batches, the pipeline bubble, 1F1B schedules); sequence and context parallelism (ring attention); expert parallelism for MoE; combining them into 3-D/4-D parallelism; activation checkpointing; FP8 training; FlashAttention's role in training; overlapping communication with compute; model FLOPs utilisation (MFU).
+- **Hero animation:** a model drawn as a block of layers × matrix columns is sliced three ways across a grid of GPUs (copies for data, column cuts for tensor, layer cuts for pipeline); then ZeRO stages shard optimiser states, gradients and parameters while per-GPU memory bars drop.
+- **Interactives:** ZeRO memory calculator (parameters, GPUs, stage → memory per GPU); pipeline-schedule visualiser where more micro-batches shrink the bubble; a parallelism planner that suggests a layout for a model size and GPU count.
+
+```latex
+M_{\text{ZeRO-1}}=4\Psi+\frac{12\Psi}{N_d},\quad M_{\text{ZeRO-2}}=2\Psi+\frac{14\Psi}{N_d},\quad M_{\text{ZeRO-3}}=\frac{16\Psi}{N_d}\ \text{bytes},\qquad \text{bubble}=\frac{p-1}{m+p-1}
+```
+
+#### Module 14 · Distillation
+
+- **Covers:** teacher and student; hard labels vs soft targets and the "dark knowledge" in them; temperature; logit distillation, hidden-state (feature) distillation, sequence-level distillation on teacher outputs, on-policy distillation and why it minimises reverse KL (mode-seeking) rather than forward KL (mean-seeking); reasoning-trace distillation into small open models; distillation combined with pruning.
+- **Hero animation:** the teacher's probability bars, softened by temperature, pour into a smaller student network whose bars converge to the teacher's shape over training steps.
+- **Interactives:** temperature slider showing how softening reveals which wrong answers are "nearly right"; student size vs accuracy trade-off chart.
+
+```latex
+\mathcal{L}=\alpha\,\mathrm{CE}\big(y,\,p_s\big)+(1-\alpha)\,T^{2}\,\mathrm{KL}\big(p_t^{(T)}\,\|\,p_s^{(T)}\big),\qquad p^{(T)}=\mathrm{softmax}(z/T)
+```
+
+#### Module 15 · Quantisation: FP8, FP4 and TurboQuant
+
+- **Covers:** number formats (FP32, FP16, BF16, FP8 E4M3 and E5M2, INT8, INT4, NF4, FP4 variants such as MXFP4 and NVFP4); absmax vs zero-point (affine) quantisation; per-tensor, per-channel and per-group granularity; outliers and why LLMs resist naive quantisation; post-training vs quantisation-aware training; GPTQ, AWQ, SmoothQuant, LLM.int8(); GGUF k-quants; QLoRA; KV-cache quantisation, including TurboQuant (Google Research, 2026), which compresses the KV cache to about 3 bits per value without retraining by rotating vectors (PolarQuant) and adding a 1-bit residual correction (QJL).
+- **Maths:** scale and zero-point from the value range; rounding error bounded by s/2; weight memory ≈ parameters × bits ÷ 8.
+- **Hero animation:** a weight-matrix heat map snaps onto fewer levels as bit-width drops 16 → 8 → 4 → 2, with an error map beside it; one outlier stretches the scale and crushes every other value.
+- **Interactives:** bit-layout explorer (sign, exponent and mantissa bits for each format); quantise-a-tensor lab (bit-width, granularity, group size → error and memory); "will it fit on my GPU" calculator (parameters, bits, context → VRAM).
+
+```latex
+q=\mathrm{clamp}\!\Big(\mathrm{round}\big(\tfrac{x}{s}\big)+z,\;0,\;2^{b}-1\Big),\qquad \hat{x}=s\,(q-z),\qquad s=\frac{x_{\max}-x_{\min}}{2^{b}-1}
+```
+
+### Part 4 · Real models, new ideas and adapting them
+
+#### Module 16 · Open-source LLM architectures compared
+
+- **Covers:** how the 2017 block evolved into today's block (pre-norm, RMSNorm, SwiGLU, RoPE, GQA, MoE, MLA), then one spec card per model family: Llama, Mistral and Mixtral, Qwen, DeepSeek, Gemma, Phi, gpt-oss and newer releases. Confirm the current lineup when the module is written.
+- **Spec-card fields:** total and active parameters, layers, d\_model, query and KV heads, attention type, positional encoding and RoPE base, norm, activation, vocabulary size, context length, MoE layout (experts, top-k, shared), licence.
+- **Data source:** each card is generated from the model's published config.json by a script, so numbers are never hand-typed and a refresh is one command.
+- **Hero animation:** an evolution timeline where one block diagram morphs as each innovation is applied, with model names appearing at the step that introduced it.
+- **Interactives:** architecture diff (pick two models; their block diagrams highlight the differences); parameter-count calculator that reproduces each model's published size from its config.
+
+#### Module 17 · New block designs: Attention Residuals and beyond
+
+- **The problem:** with PreNorm, a standard residual connection adds every layer's output with equal weight, so the hidden state keeps growing with depth and each early layer's contribution gets diluted ("information" or "hidden-state dilution"). The module sets this beside two related deep-network failure modes: rank collapse (token representations become nearly identical) and entropy collapse (attention becomes over-peaked and training destabilises). Dilution is the one the Attention Residuals report targets directly; confirm what it measures for the other two before publishing.
+- **Attention Residuals (AttnRes):** a 2026 technical report from Moonshot AI's Kimi team that replaces the fixed sum with softmax attention over depth: each layer forms a query and takes a learned, input-dependent weighted mix of earlier layers' outputs. The key analogy: attention replaced fixed recurrence across *time* in RNNs; AttnRes applies the same fix across *depth*. The report shows standard residuals (and Highway or Hyper-Connections) behave like depth-wise *linear* attention, while AttnRes is depth-wise *softmax* attention.
+- **Making it scale:** Block AttnRes groups layers into blocks and attends over block summaries, cutting memory from O(L·d) to O(N·d); about 8 blocks capture most of the gain; cross-stage caching makes it work with pipeline parallelism. It was trained inside Kimi Linear, a 48B-total, 3B-active MoE model.
+- **Also in this module:** linear-attention and state-space (Mamba-style) hybrid layers, and why labs mix them with full attention for long context.
+- **Hero animation:** a tall layer stack; with standard residuals every layer pours an equal cup into one bucket, the bucket grows and the early colours fade; with AttnRes each layer shines a spotlight of varying brightness on the earlier layers it needs.
+- **Interactives:** depth slider comparing hidden-state norm and early-layer share for standard vs AttnRes in a toy simulation; heat map of learned depth-attention weights (layer × earlier layer).
+
+```latex
+\text{standard: } h_l=h_1+\sum_{i<l}f_i(h_i),\qquad \text{AttnRes: } h_l=\sum_{i<l}\alpha_{i\to l}\,v_i,\quad \alpha_{i\to l}=\mathrm{softmax}_i\!\big(q_l^{\top}k_i\big)
+```
+
+#### Module 18 · Beyond next-token LLMs: concept models, JEPA and decision models
+
+- **Covers:** alternatives to predicting one token at a time:
+  - **Large Concept Models** (Meta): predict the next *sentence-level* concept embedding in a language-agnostic space, then decode it to text.
+  - **JEPA** (joint-embedding predictive architectures, Yann LeCun's line of work): predict representations rather than raw pixels or tokens; I-JEPA and V-JEPA for vision, LLM-JEPA adding a JEPA term to language-model training; the "world model" argument.
+  - **Diffusion language models:** generate a whole sequence by iterative denoising instead of left to right.
+  - **Decision models:** Jev, released by TypeSafe AI on 15 September 2026 as a "System One" model, returns a typed decision with calibrated probabilities in a single pass instead of generating text; uses include routing requests between LLMs, checking an agent's proposed action, and classification inside software.
+- **Where each fits:** generation and open reasoning (LLMs), fast bounded choices (decision models, small classifiers), long-horizon planning research (concept and world models).
+- **Hero animation:** three machines side by side: an LLM typing word by word, a concept model emitting sentence-sized blocks, and a decision model flipping one labelled switch with a probability gauge.
+- **Interactives:** "pick the right model for the job" sorter over 12 example tasks; latency and cost comparison drawn from published, dated figures.
+
+#### Module 19 · Multimodality
+
+- **Covers:** images as tokens (Vision Transformer patches); vision encoders (CLIP, SigLIP); joining vision to an LLM via a projector (LLaVA-style), cross-attention (Flamingo-style) or native early fusion; image-token budgets and high-resolution tiling; documents, charts and OCR-free reading; audio (spectrograms, speech encoders, audio codecs and speech-to-speech models); video as sampled frames; image generation with diffusion and with autoregressive image tokens; multimodal benchmarks; links to multimodal embeddings (Module 4) and multimodal RAG (Module 25).
+- **Hero animation:** a photo is cut into patches; each patch becomes a token chip that joins the same queue as the text tokens; a question's attention lines then light up the patches it looks at.
+- **Interactives:** patch-size and resolution slider showing image-token count and cost; attention-over-image heat map for a question; waveform → spectrogram → audio tokens walkthrough.
+
+#### Module 20 · Fine-tuning: full, LoRA and QLoRA
+
+- **Covers:** when to prompt, retrieve or fine-tune; full fine-tuning and its memory cost (weights + gradients + Adam states); supervised fine-tuning data formats and chat templates; parameter-efficient fine-tuning (adapters, prefix tuning, LoRA, DoRA); QLoRA (4-bit NF4 base, double quantisation, paged optimisers); choosing rank, alpha and target modules; merging adapters, and model merging of whole fine-tunes; preference tuning (DPO) as a follow-on; catastrophic forgetting and how to measure it.
+- **Maths:** LoRA freezes W and learns a low-rank update BA, cutting trainable parameters from d·k to r·(d + k); scaling by α/r; full fine-tuning memory ≈ 16 bytes per parameter in mixed precision with Adam, vs roughly 0.5 byte per frozen parameter in 4-bit QLoRA plus the small adapter.
+- **Hero animation:** a large frozen weight matrix greys out while two thin coloured strips (B and A) slide in beside it; their product fills a ghost matrix that adds onto W; then W shrinks to 4-bit blocks for QLoRA while the strips stay in 16-bit.
+- **Interactives:** rank slider showing trainable-parameter count and adapter size; GPU-memory calculator comparing full, LoRA and QLoRA for a chosen model; a before/after output comparison from a small adapter trained for the site.
+
+```latex
+h=W_0x+\Delta W x=W_0x+\frac{\alpha}{r}\,BAx,\qquad B\in\mathbb{R}^{d\times r},\;A\in\mathbb{R}^{r\times k},\;r\ll\min(d,k)
+```
+
+### Part 5 · Retrieval and RAG
+
+#### Module 21 · Embedding models in depth
+
+- **Covers:** how an embedding model differs from a chat model; bi-encoder architecture (one encoder, two inputs, compare vectors); pooling (CLS, mean, last-token); contrastive training with in-batch and hard negatives; instruction-prefixed embeddings (query vs passage prompts); dimension, max sequence length and normalisation; Matryoshka and int8/binary vectors for cost; multilingual and code embedding models; domain fine-tuning of an embedding model; how to choose one using the MTEB leaderboard and your own eval set.
+- **Maths:** InfoNCE loss with temperature; cosine similarity on L2-normalised vectors; storage = vectors × dimensions × bytes.
+- **Hero animation:** a query and its positive passage are pulled together while in-batch negatives are pushed apart, epoch by epoch, in a 2-D projection.
+- **Interactives:** compare two embedding models on the same 20 query–passage pairs (similarity matrix heat maps side by side); dimension-truncation slider with recall and storage cost; "query: / passage:" prefix toggle showing its effect on ranking.
+
+```latex
+\mathcal{L}_{\text{InfoNCE}}=-\log\frac{\exp(\mathrm{sim}(q,p^{+})/\tau)}{\sum_{j}\exp(\mathrm{sim}(q,p_j)/\tau)}
+```
+
+#### Module 22 · Vector search and HNSW
+
+- **Covers:** search by embedding; the cost of exact k-NN; the recall-vs-latency trade-off of approximate search; IVF and product quantisation; navigable small-world graphs; HNSW layers, greedy descent, and the parameters M, efConstruction and efSearch; vector databases; where this sits in a RAG pipeline.
+- **Maths:** cosine, inner product and L2 distance, and why they rank alike on normalised vectors; random layer assignment; roughly logarithmic search cost.
+- **Hero animation:** a 2-D point cloud; the query enters the sparse top layer, hops greedily to the closest node, drops a layer and repeats until the dense bottom layer returns its neighbours.
+- **Interactives:** HNSW playground (add points, set M and efSearch, watch recall and hop count); brute force vs IVF vs HNSW recall–latency chart; a mini RAG demo that searches the site's own pages.
+
+```latex
+\ell=\big\lfloor -\ln(U)\cdot m_L \big\rfloor,\quad U\sim\mathrm{Uniform}(0,1),\qquad \cos(a,b)=\frac{a\cdot b}{\lVert a\rVert\,\lVert b\rVert}
+```
+
+#### Module 23 · Chunking strategies
+
+- **Covers:** why chunk at all (embedding length limits, precision of retrieval, context budget); fixed-size chunks with overlap; recursive splitting on separators; sentence and paragraph splitting; structure-aware chunking (Markdown headings, HTML, code by function, tables kept whole); semantic chunking by embedding-similarity breakpoints; parent–child (small-to-big) chunks; late chunking; contextual chunk headers that prepend document and section titles; metadata to carry with each chunk.
+- **Trade-offs to show:** small chunks match precisely but lose context; large chunks keep context but dilute the vector and waste tokens.
+- **Hero animation:** one real document is cut five ways side by side; for the same query, the retrieved chunk is highlighted under each strategy so the reader sees which one contains the full answer.
+- **Interactives:** chunk lab (paste text, pick strategy, size and overlap, see chunk boundaries and counts); retrieval hit-rate chart across strategies on a fixed question set.
+
+#### Module 24 · Re-ranking with cross-encoders
+
+- **Covers:** bi-encoder vs cross-encoder; why a cross-encoder is more accurate (query and passage attend to each other) but too slow to score a whole corpus; the two-stage retrieve-then-rerank pipeline; candidate depth (top 50–200 in, top 5–10 out); LLM-as-reranker (pointwise, pairwise, listwise); late-interaction (ColBERT) as the middle ground; latency and cost budgeting.
+- **Maths:** cross-encoder score = a linear head on the joint \[CLS\] representation; cost comparison, N passage encodings once offline vs N cross-encoder passes per query; ranking metrics nDCG@k and MRR.
+- **Hero animation:** a bi-encoder encodes query and passages separately into two towers; then a cross-encoder feeds each query–passage pair through one tower with attention lines crossing between them; the ranked list reshuffles.
+- **Interactives:** before/after re-ranking list with nDCG@10 shown; candidate-depth slider trading recall against latency.
+
+```latex
+\mathrm{nDCG@}k=\frac{1}{\mathrm{IDCG@}k}\sum_{i=1}^{k}\frac{2^{rel_i}-1}{\log_2(i+1)}
+```
+
+#### Module 25 · The seven types of RAG
+
+- **Covers:** why retrieval-augmented generation (fresh, private, citable knowledge without retraining); the seven designs below as a ladder, each fixing a failure of the one before; long context vs RAG; failure modes (missed retrieval, wrong chunk, ignored context, invented citation); evaluation with retrieval metrics (recall@k, MRR, nDCG) and answer metrics (faithfulness, relevance, context precision) scored by labelled sets and LLM judges.
+
+| Type | Core idea | Animation shows |
+| --- | --- | --- |
+| Naive RAG | Chunk, embed, retrieve top-k, generate | A straight pipe from question to answer |
+| Advanced RAG | Query rewriting, HyDE and multi-query before retrieval; re-ranking and compression after | Extra stations added before and after the pipe |
+| Hybrid RAG | Dense vectors plus sparse keyword (BM25) search, fused with reciprocal rank fusion | Two ranked lists merging into one |
+| Graph RAG | A knowledge graph of entities and relations for multi-hop and whole-corpus questions | The query hopping across connected nodes |
+| Agentic RAG | An agent decides whether, where and how often to search, and which tools to use | The agent loop choosing among search tools |
+| Self-RAG and Corrective RAG (CRAG) | The model grades its retrieval and its own draft, then re-retrieves or falls back to web search | A checkpoint that sends bad results back round |
+| Multimodal RAG | Retrieve tables, charts, images, audio and video, not just text | Mixed media cards entering the context |
+
+- **Hero animation:** one hard question run through all seven designs in turn, with a scoreboard of answer quality, latency and cost growing beside it.
+- **Interactives:** RAG pipeline builder (switch each technique on and watch quality on a fixed question set); failure-mode gallery with a "diagnose this answer" exercise; a working RAG demo over the site's own pages.
+
+```latex
+\mathrm{RRF}(d)=\sum_{r\in R}\frac{1}{k+\mathrm{rank}_r(d)},\qquad k\approx 60
+```
+
+#### Module 26 · Graph RAG, open knowledge graphs and vectorless RAG
+
+- **Graph RAG:** extracting entities and relations with an LLM; community detection and community summaries; local search (around an entity) vs global search (across communities); when graphs beat vectors (multi-hop, "what are the main themes" questions) and what they cost to build.
+- **Open knowledge graphs:** public graphs such as Wikidata and DBpedia; triples, RDF and SPARQL; entity linking; letting an LLM write SPARQL or Cypher queries; grounding answers in curated facts.
+- **Vectorless RAG:** retrieval without embeddings or chunking. The leading open-source example, PageIndex, builds a table-of-contents tree of a long document and lets the LLM reason down the tree to the right sections, giving traceable page-level citations. Related: agentic search with grep and file reads, as coding agents do. Strong for long, structured documents (filings, manuals, contracts); slower and costlier per query than a vector lookup.
+
+| Approach | Index | Retrieval step | Best for |
+| --- | --- | --- | --- |
+| Vector RAG | Embeddings of chunks | Nearest-neighbour search | Large, loosely structured collections |
+| Graph RAG | Entities, relations, community summaries | Graph traversal and summary lookup | Multi-hop and corpus-wide questions |
+| Vectorless RAG | Document tree with section summaries | LLM reasoning over the tree | Long, well-structured documents needing traceable answers |
+
+- **Hero animation:** the same question answered three ways side by side: dots lighting up in a vector space, a path hopping across a graph, and an LLM walking down a table-of-contents tree.
+- **Interactives:** build a mini knowledge graph from a pasted paragraph; tree-index navigator showing each reasoning step; a recorded Wikidata SPARQL query with its results.
+
+### Part 6 · Agents and harnesses
+
+#### Module 27 · Agents, tool use and the ReAct framework
+
+- **Covers:** what makes a system an agent (a model choosing actions in a loop until a goal is met); workflows vs agents; function calling with JSON-schema tool definitions; structured outputs; planning and task decomposition; reflection and self-correction (Reflexion); stop conditions; common patterns (prompt chaining, routing, parallelisation, orchestrator–workers, evaluator–optimiser); why agents fail (compounding errors, tool misuse, looping, prompt injection from tool results).
+- **ReAct (Reasoning + Acting):** the 2022 pattern that interleaves a *thought*, an *action* (a tool call) and an *observation* (the tool result) until the answer is reached; why interleaving beats reasoning-only (no fresh facts) and acting-only (no plan); how today's native tool calling is ReAct built into the model and API.
+- **Hero animation:** the agent loop as a clock face: think → tool call → tool runs → result returns into the context → think again, with the context window filling on each lap; a ReAct trace scrolls beside it, each line colour-coded as Thought, Action or Observation.
+- **Interactives:** step-through of a recorded ReAct trace with every turn expandable; tool-schema editor showing how a vague tool description makes the model call the wrong tool.
+
+#### Module 28 · Context engineering and context rot
+
+- **Context engineering:** deciding what enters the context window on every turn: instructions, tool definitions, retrieved documents, memory, conversation history and tool results; ordering; token budgets; loading information just in time instead of up front; trimming tool output; compaction; structured notes; isolating side tasks in subagents (Module 34).
+- **Context rot:** model accuracy falls as the input grows, well before the advertised context limit; the "lost in the middle" effect; distractor passages; why simple needle-in-a-haystack tests overstate long-context ability; mitigations (shorter, cleaner context, retrieval, compaction, fresh subagent contexts).
+- **Hero animation:** the context window as a desk that fills with papers; as the pile grows, the model's spotlight dims and blurs and an accuracy gauge drops; a compaction step clears the desk and the gauge recovers.
+- **Interactives:** context length vs accuracy chart from recorded runs; "where is the fact" slider showing lost-in-the-middle; a context-budget planner that allocates tokens across instructions, tools, retrieval and history.
+
+#### Module 29 · Types of memory
+
+- **Covers:** a taxonomy readers can reuse:
+  - Parametric memory: knowledge stored in the weights; changed only by training or fine-tuning.
+  - Working (short-term) memory: the context window, including the KV cache that holds it during generation.
+  - Episodic memory: records of past sessions and events, retrieved when relevant.
+  - Semantic memory: facts about the user, the world or a project, often in a vector store or knowledge graph.
+  - Procedural memory: how to do things, stored as instructions, skills or examples.
+  - Scratchpads and notes files: memory the agent writes to itself during a long task.
+- **Operations:** write, consolidate, retrieve, update, forget; compaction and summarisation when the context fills; privacy and user control over what is remembered.
+- **Hero animation:** a long conversation scrolls past a fixed-size context window; older turns compress into a summary card, key facts drop into a long-term store, and a later question pulls the right fact back into the window.
+- **Interactives:** memory simulator (set context size and compaction rule, run a 50-turn conversation, see what the agent still knows at the end).
+
+#### Module 30 · Harness engineering: building the harness
+
+- **Covers:** the harness as everything around the model that turns it into a working agent; harness engineering as the practice of designing that environment so the agent succeeds. The building blocks, each a sub-page:
+  1. The agent loop: turn handling, tool dispatch, stop conditions and turn, token and cost budgets.
+  2. Instructions: system prompt, project instruction files, and how they are layered.
+  3. Tool design: clear names and descriptions, narrow schemas, helpful error messages, results sized for the context window.
+  4. Context management: what enters the window, truncating tool output, compaction, prompt caching.
+  5. Sub-agents and delegation: fresh contexts for side tasks, returning only summaries.
+  6. Permissions and approvals: which actions run freely, which need a human yes, which are never allowed.
+  7. Sandboxing: containers, file-system scope, network allow-lists, secrets handling.
+  8. State and recovery: checkpoints, resumable sessions, retries, rollback.
+  9. Hooks and guardrails: checks before and after tool calls, output validation, prompt-injection defences.
+  10. Observability and evals: full traces, cost and latency metrics, regression tests on recorded tasks.
+- **Hero animation:** a bare model in the centre; each building block snaps around it as a ring, and a sample task that failed with the bare model succeeds once the full harness is in place.
+- **Interactives:** "build a harness" toy where readers toggle each block on or off and replay the same task to see where it breaks; a permission-policy editor run against a list of risky actions.
+
+**Module 30 sub-page · The ETCSLV framework:** a compact way to describe any harness as H = (E, T, C, S, L, V), used for example by the open-source NanoHarness project. The module maps it onto the ten building blocks above and uses it as a checklist for comparing real harnesses. (The letter names below follow that project; confirm the canonical wording before publishing.)
+
+| Letter | Part of the harness | Building blocks it covers |
+| --- | --- | --- |
+| E | Execution engine: the agent loop itself | 1 |
+| T | Tools: registry, schemas, dispatch | 3 |
+| C | Context: instructions, window management, compaction | 2, 4, 5 |
+| S | State: checkpoints, sessions, recovery | 8 |
+| L | Lifecycle hooks: permissions, sandbox checks, guardrails | 6, 7, 9 |
+| V | Verification: evaluators, stop checks, traces | 10 |
+
+#### Module 31 · Loop engineering and the Ralph Wiggum loop
+
+- **Covers:** the progression prompt engineering → context engineering → harness engineering → **loop engineering**: designing the system that prompts, checks, remembers and re-runs an agent until a goal is met, instead of a person driving every turn. The parts of a loop: a trigger (schedule, event, a /loop or /goal command), a goal with a clear "done" test, verification on every pass (tests, checks, an LLM judge), memory between passes (progress files, git history), isolation (worktrees, sandboxes), skills and connectors, subagents, budgets and a hard iteration cap, and escalation to a human.
+- **The Ralph Wiggum loop:** a deliberately simple pattern popularised by Geoffrey Huntley in 2025: run a coding agent on the same prompt inside an endless shell loop. Each pass starts with a fresh context, reads the spec and a progress file from disk, does the next piece of work, commits and exits. State lives in files and git, not in the context window, which sidesteps context rot (Module 28). It needs strong tests and a cost cap, or it drifts and burns money.
+
+```
+while :; do cat PROMPT.md | coding-agent ; done
+```
+
+- **Hero animation:** a wheel turning lap by lap: read plan → work → run tests → write progress → wipe context; an iteration counter and cost meter tick up until the test light turns green and the wheel stops.
+- **Interactives:** loop designer (choose trigger, goal, verifier, memory and cap, then run a simulation that shows what breaks when a part is missing); a recorded Ralph-loop build replayed at high speed.
+
+#### Module 32 · MCP: the Model Context Protocol
+
+- **Covers:** the problem it solves (every app × every tool integration becomes apps + tools); roles: host, client and server; server primitives (tools, resources, prompts) and client primitives (sampling, roots, elicitation); JSON-RPC messages and the session lifecycle (initialise, negotiate capabilities, tools/list, tools/call, notifications); transports (local stdio and streamable HTTP); authorisation for remote servers; writing a small server; security (tool poisoning, prompt injection through tool results, over-broad scopes, untrusted servers); how MCP (agent ↔ tool) differs from plain function calling and from A2A (agent ↔ agent, Module 35).
+- **Hero animation:** a host app with client ports on the left and servers as plug-in devices on the right; an initialise handshake, then a tools/list envelope travels out and comes back unfolding into a menu of tools; a tools/call returns a result into the model's context.
+- **Interactives:** MCP message inspector replaying a real session step by step; an in-browser "build a server" exercise against a mock host.
+
+#### Module 33 · Skills and plugins
+
+- **Covers:** skills as folders of instructions, scripts and reference files that an agent loads only when a task needs them (progressive disclosure: only a name and one-line description sit in context until then); the SKILL.md convention now shared across many agent tools; plugins as installable bundles of skills, commands, MCP servers, hooks and subagents; distribution and versioning; reviewing third-party skills and plugins for security; when to write a skill vs an MCP server vs a prompt.
+- **Hero animation:** the context window as a shelf: skill names sit as thin spines until one is needed, then it opens and its instructions slide in; a plugin box unpacks into skills, a server socket and a hook.
+- **Interactives:** write a tiny skill in the browser and watch a recorded agent pick it up; a plugin anatomy explorer.
+
+#### Module 34 · Agent orchestration and subagents
+
+- **Orchestration patterns:** single agent with tools; sequential pipeline; router; orchestrator–workers; hierarchical teams; hand-offs; parallel fan-out and fan-in; evaluator–optimiser; graph or state-machine workflows; durable execution for long-running jobs; using a cheap decision model (Module 18) for routing.
+- **Subagents:** child agents started with a fresh context window, their own instructions, tools and permissions, returning only a compact summary. Why they help (context isolation against context rot, parallel work, specialisation) and what they cost (more total tokens, lost nuance between agents, coordination errors); when one agent is better.
+- **Hero animation:** an orchestrator splits a task into three subagents, each in its own small context bubble; they return short summaries and the main context stays small, while a single-agent version beside it overflows.
+- **Interactives:** pattern picker with a recorded trace for each pattern; token and latency comparison of single-agent vs multi-agent runs on the same task.
+
+#### Module 35 · Agent-to-agent communication
+
+- **Covers:** single-agent vs multi-agent systems and when more agents help (parallel research, separation of concerns) or hurt (cost, lost context, coordination errors); patterns: orchestrator–workers, hand-offs, pipelines, debate and critique; the Agent2Agent (A2A) protocol for agents from different vendors (agent cards for discovery, tasks with a lifecycle, messages and artifacts, streaming updates); how A2A (agent ↔ agent) complements MCP (agent ↔ tool); trust, authentication and data boundaries between agents.
+- **Hero animation:** an orchestrator splits a request into three sub-tasks, sends them to specialist agents over A2A, and merges their artifacts, with each message envelope opening to show its fields.
+- **Interactives:** multi-agent replay with a timeline per agent; an "agent card" builder showing what another agent can discover.
+
+#### Module 36 · Agentic engineering
+
+- **Covers:** the engineering discipline of building reliable systems with and for agents: specs and plans before code; instruction files that encode project conventions; tests, linters and type checks as the agent's feedback loop; verification before "done"; running agents in parallel on isolated branches; reviewing agent output; designing tools and docs for agent readers; eval-driven development; cost, latency and reliability budgets; where humans stay in the loop.
+- **Hero animation:** a human sets a goal and constraints; several agents work in parallel lanes; failing tests bounce work back automatically; only verified changes reach the human for review.
+- **Interactives:** a case study replay of one feature built agentically, annotated at each decision; a self-assessment checklist for how "agent-ready" a codebase is.
+
+### Part 7 · Production and safety
+
+#### Module 37 · Benchmarking and evaluation
+
+- **Techniques:** multiple-choice scoring by log-likelihood vs free generation; exact match, F1, pass@k; LLM-as-judge and its biases (position, length, self-preference); pairwise comparison with Elo or Bradley–Terry ratings; human evaluation; zero-shot vs few-shot and prompt sensitivity; confidence intervals and why a 1-point gap is often noise; contamination and saturation; building your own task-specific eval set; offline evals vs online A/B tests.
+- **Popular benchmarks**, grouped by what they measure (check which are current and which are saturated when the module is written):
+
+| Measures | Benchmarks |
+| --- | --- |
+| Knowledge and reasoning | MMLU, MMLU-Pro, GPQA Diamond, Humanity's Last Exam, ARC-AGI |
+| Maths | GSM8K, MATH, AIME |
+| Code | HumanEval, LiveCodeBench, SWE-bench Verified |
+| Agents and tool use | τ-bench, Terminal-Bench, GAIA, OSWorld, BrowseComp |
+| Instruction following and chat | IFEval, MT-Bench, LMArena (Chatbot Arena) |
+| Long context | RULER, needle-in-a-haystack tests |
+| Embeddings and retrieval | MTEB, BEIR |
+| Truthfulness and safety | TruthfulQA, HarmBench |
+| Holistic suites | HELM |
+
+- **Hero animation:** a leaderboard whose bars sprout error bars; two "different" models merge into a tie once the intervals overlap.
+- **Interactives:** pass@k calculator; LLM-judge bias demo (swap answer order, watch the verdict flip); a mini eval harness that scores two small models on 20 site-written questions.
+
+```latex
+\mathrm{pass@}k=\mathbb{E}\left[1-\frac{\binom{n-c}{k}}{\binom{n}{k}}\right],\qquad P(A\succ B)=\frac{1}{1+10^{(R_B-R_A)/400}}
+```
+
+#### Module 38 · LLMOps
+
+- **Covers:** the lifecycle from prototype to production: prompt and config versioning; experiment tracking; model registry; serving engines (vLLM, SGLang, TGI, llama.cpp) and continuous batching; latency metrics (time to first token, time per output token, throughput); autoscaling, routing and fallbacks across models; prompt caching and semantic caching; observability with traces, token and cost dashboards; online evals and user-feedback loops; CI for prompts and agents; drift and regression detection; cost control.
+- **Hero animation:** a request flows through gateway, cache, router, model server and logger, with a live dashboard updating TTFT, tokens and cost.
+- **Interactives:** serving simulator (batch size, concurrency, model size → latency and cost per 1k requests); a trace explorer for a recorded production request.
+
+#### Module 39 · Safety, alignment and interpretability
+
+- **Covers:** hallucination (why next-token training produces confident errors, calibration, detection, grounding); prompt injection, direct and indirect (instructions hidden in web pages, documents or tool results), and jailbreaks; defences (instruction hierarchy, input and output guardrails, least-privilege tools, sandboxing, human approval for risky actions); red-teaming; alignment ideas (helpful, honest, harmless; specification gaming; reward hacking); interpretability: why attention maps are not explanations, probing, the logit lens, sparse autoencoders and learned features, circuits; safety evaluations and bias testing.
+- **Hero animation:** an indirect prompt injection: a web page with hidden text flows into an agent's context and tries to redirect a tool call to send data out; a guardrail and the permission layer catch it.
+- **Interactives:** "spot the injection" game over real-looking tool outputs; logit-lens viewer on a small model (what the model would predict at each layer); sparse-autoencoder feature browser with precomputed features.
+
+#### Module 40 · Model governance
+
+- **Covers:** model inventory and ownership; model cards and dataset datasheets; data provenance, licensing and consent; risk classification and approval gates before release; red-teaming and safety evaluation; access control, audit logs and incident response; privacy (PII handling, retention); bias and fairness testing; human oversight for high-impact uses; frameworks to map against (NIST AI RMF, ISO/IEC 42001, the EU AI Act's risk tiers, and local data-protection law).
+- **Hero animation:** a model moves through a release pipeline of gates (data review, eval, red-team, sign-off); a failing check halts it and opens an incident card.
+- **Interactives:** fill-in model card template; a risk-tier quiz that classifies example use cases.
+
+### Capstone
+
+#### Module 41 · Capstone: follow one request end to end
+
+- **Covers:** one prompt's whole trip: text → tokens → embeddings with RoPE → N blocks (GQA attention with KV cache, MoE feed-forward) → logits → sampling → detokenised text, with quantised weights; then the same request inside an agent harness that chunks, retrieves and re-ranks context, calls a tool, writes to memory, and is traced and evaluated in production.
+- **Hero animation:** one long scrollytelling sequence that reuses every earlier animation component in order, showing tensor shapes at each stage.
+- **Interactives:** a tiny real model running in the browser, with every intermediate tensor open for inspection.
+
+A separate **Maths appendix** collects full derivations linked from each module's Maths depth: backpropagation through attention, the √d\_k variance argument, RoPE's relative-position property, contrastive (InfoNCE) loss, the KL term in distillation, quantisation error, LoRA's low-rank update, forward and reverse KL, the RLHF and DPO objectives, MLA's latent attention, ZeRO memory, and ranking and evaluation metrics (nDCG, RRF, pass@k, Elo).
+
+## Visual language and animation system
+
+One visual grammar runs through all 42 modules, so the blue a reader learns as "query" in Module 5 means query again in the Module 41 capstone.
+
+**Colour semantics** (the same colours appear in diagrams and in the KaTeX equations)
+
+| Element | Colour | First used |
+| --- | --- | --- |
+| Forward pass vs gradients | Solid vs dashed arrows, gradients in amber | Module 1 |
+| Tokens | 8-hue cycling palette, one hue per token | Module 3 |
+| Query (Q) | Blue | Module 5 |
+| Key (K) | Orange | Module 5 |
+| Value (V) | Green | Module 5 |
+| Residual stream | Neutral grey | Module 5 |
+| Probability distributions P and Q (KL) | Ink outline vs filled violet | Module 0 |
+| KV cache blocks | Stacked blue-green tiles | Module 10 |
+| Router and experts | Purple | Module 12 |
+| GPUs and shards | One muted hue per device | Module 13 |
+| Precision and error | Sequential amber → red scale | Module 15 |
+| Image and audio tokens | Patch thumbnails framed in the token palette | Module 19 |
+| Frozen weights vs trainable adapters | Grey vs bright pink | Module 20 |
+| Search graph layers | Lightness steps of one teal | Module 22 |
+| Chunks, retrieved and re-ranked passages | Outlined cards; filled teal when retrieved | Module 23 |
+| Agent turns, tool calls, tool results | Slate lanes with three marker shapes | Module 27 |
+| Memory stores | Warm brown cards on shelves | Module 29 |
+| Pass, fail, needs review | Green, red, amber (always with an icon) | Module 37 |
+| Untrusted or injected content | Red hatching | Module 39 |
+
+**Shape vocabulary**
+
+- A vector is a column of cells, shade = value, with an optional number overlay.
+- A matrix is a grid; a tensor is stacked grids with its shape label, e.g. \[seq, d\_model\].
+- A model component is a rounded block with input and output ports; arrows carry data, never control.
+- Probabilities are horizontal bars that always sum visibly to 100%.
+
+**Motion rules**
+
+1. Every animation is driven by scroll position or a step button; nothing loops in the background.
+2. Each animation has play, pause, step back, step forward and a scrubber.
+3. Transitions run 300–600 ms with ease-in-out; a value that changes flashes once, then settles.
+4. With reduced-motion set, animations become numbered static frames.
+
+**Layout:** two columns on desktop (sticky visual beside scrolling text); one column on mobile with the visual pinned at the top.
+
+**Accessibility:** a text transcript for every animation; full keyboard control; colour never carries meaning alone; WCAG AA contrast in light and dark themes.
+
+**Reusable component library** (built once in Phase 0, used everywhere)
+
+- Display: VectorCell, MatrixGrid, TensorStack, TokenChip, AttentionHeatmap, BlockDiagram, ProbabilityBars, EmbeddingSpace3D, ChunkViewer, RankedList, PipelineFlow, AgentTrace, MemoryShelf, ComputeGraph, LossLandscape, DistributionFit, GpuGrid, KvCacheBar, DepthAttentionMap.
+- Control: Slider, Stepper, Toggle, Scrubber, DepthSwitch (Intuition / Mechanics / Maths).
+- Page: ScrollyStage (sticky visual + steps), MathBlock with colour-linked terms, TryItCell (in-browser NumPy), Quiz, LeavesOutBox.
+
+## Tech stack and site architecture
+
+A static, content-first site where each page ships plain HTML and loads its interactive widgets only as the reader scrolls to them.
+
+| Layer | Choice | Why |
+| --- | --- | --- |
+| Site framework | Astro + MDX | Pages are mostly prose; ships zero JS by default; widgets load as islands |
+| Widget framework | React (or Svelte) | Large ecosystem for D3, Three.js and animation bindings |
+| 2-D diagrams | SVG + D3 | Data-bound, crisp at any size, easy to colour-link with maths |
+| Timeline animation | GSAP or Motion | Scrubbable timelines that map cleanly to scroll position |
+| Scrollytelling | Scrollama / IntersectionObserver | Steps the sticky visual as text scrolls |
+| 3-D scenes | Three.js via react-three-fiber | Embedding spaces, capstone token journey |
+| Heavy grids | Canvas or PixiJS | Attention maps above 64×64, HNSW with 10k points |
+| Maths | KaTeX, server-rendered | Fast, no layout shift, supports per-term colour |
+| In-browser ML | transformers.js / ONNX Runtime Web (WebGPU when present) | Real tokenizers and a tiny model in the page |
+| Try-it cells | Pyodide | NumPy in the browser, no server |
+| Precomputed data | Python scripts at build time | Attention maps, embedding projections, model configs exported to JSON |
+| Search | Pagefind | Static full-text search, no backend |
+| Hosting | Cloudflare Pages, Vercel or Netlify | Free tier, global CDN, preview deploys per branch |
+| Quality gates | Playwright visual tests, Lighthouse budgets | Catch broken animations and slow pages in CI |
+
+**Repository layout**
+
+```
+src/content/modules/      one MDX file per module (00-maths-primer.mdx ... 41-capstone.mdx)
+src/components/viz/       MatrixGrid, AttentionHeatmap, BlockDiagram, ...
+src/components/widgets/   SamplingLab, QuantLab, RouterPlayground, HnswPlayground, ...
+scripts/precompute/       Python: attention maps, embeddings, model configs
+public/data/              generated JSON read by widgets
+public/models/            small ONNX models, fetched only on click
+```
+
+**Performance budget:** under 150 KB of JavaScript before the first widget; widgets lazy-load near the viewport; models download only when the reader presses Run.
+
+**Agent, RAG and fine-tuning demos:** agent and RAG widgets replay recorded traces by default, so they cost nothing to serve; an optional bring-your-own-key mode runs them live through a small serverless proxy that never stores keys. LoRA and QLoRA notebooks run on free cloud GPU tiers, not in the browser.
+
+## Roadmap
+
+About 41 weeks for one full-time builder: a public beta of the core path after week 10, a second beta through RAG after week 27, the full site after week 41.
+
+&#91;embedded content: roadmap · 5 phases, 4 gates, about 19 weeks\]
+
+Phase 0 builds the shared components and one complete prototype page first, so every later module mostly composes existing parts.
+
+## Accuracy, references and quality checks
+
+Every number on screen is computed by code, every module cites its primary papers, and an ML practitioner reviews each module before it ships.
+
+**Primary papers per module** (titles from memory; verify and link each one when the module is written)
+
+| Module | Papers and specs to read and cite |
+| --- | --- |
+| 0–1 Maths, KL, training | Kullback & Leibler 1951; Rumelhart, Hinton & Williams 1986 (backpropagation); Kingma & Ba 2014 (Adam); Loshchilov & Hutter 2017 (AdamW) |
+| 2 Why transformers | Bahdanau et al. 2014; Hochreiter & Schmidhuber 1997 (LSTM) |
+| 3 Tokenisation | Sennrich et al. 2016 (BPE for NMT); Kudo 2018 (Unigram); Kudo & Richardson 2018 (SentencePiece) |
+| 4 Embeddings | Mikolov et al. 2013 (word2vec); Pennington et al. 2014 (GloVe); Su et al. 2021 (RoPE); Khattab & Zaharia 2020 (ColBERT); Kusupati et al. 2022 (Matryoshka); Radford et al. 2021 (CLIP) |
+| 5 Attention block | Vaswani et al. 2017; Shazeer 2020 (GLU variants); Zhang & Sennrich 2019 (RMSNorm); Dong et al. 2021 (rank collapse in pure attention); Zhai et al. 2023 (attention entropy collapse) |
+| 6 Encoder / decoder | Devlin et al. 2018 (BERT); Raffel et al. 2019 (T5); Lewis et al. 2019 (BART) |
+| 7 GPTs | Radford et al. 2018/2019; Brown et al. 2020 (GPT-3); Kaplan et al. 2020; Hoffmann et al. 2022 (Chinchilla) |
+| 8 Post-training | Christiano et al. 2017; Schulman et al. 2017 (PPO); Ouyang et al. 2022 (InstructGPT); Bai et al. 2022 (Constitutional AI); Rafailov et al. 2023 (DPO); Shao et al. 2024 (GRPO); DeepSeek-R1 2025 |
+| 9 Prompt engineering | Brown et al. 2020 (few-shot); Wei et al. 2022 (chain-of-thought); Wang et al. 2022 (self-consistency); Khattab et al. 2023 (DSPy) |
+| 10 Attention evolution | Shazeer 2019 (MQA); Ainslie et al. 2023 (GQA); DeepSeek-V2 2024 (MLA, decoupled RoPE); [O'Neill et al. 2026 (LRKV)](https://arxiv.org/abs/2601.11471); Dao et al. 2022 (FlashAttention); Peng et al. 2023 (YaRN); Xiao et al. 2023 (attention sinks) |
+| 11 KV cache | Kwon et al. 2023 (PagedAttention, vLLM); Zheng et al. 2023 (SGLang prefix caching); Leviathan et al. 2022 (speculative decoding); Liu et al. 2024 (KIVI); [TurboQuant, Google Research 2026](https://infoq.com/news/2026/04/turboquant-compression-kv-cache) |
+| 12 Mixture of experts | Shazeer et al. 2017; Lepikhin et al. 2020 (GShard); Fedus et al. 2021 (Switch); Jiang et al. 2024 (Mixtral); Dai et al. 2024 (DeepSeekMoE) |
+| 13 Scaling training | Rajbhandari et al. 2019 (ZeRO); Shoeybi et al. 2019 (Megatron-LM); Huang et al. 2018 (GPipe); Narayanan et al. 2021; Zhao et al. 2023 (PyTorch FSDP); Liu et al. 2023 (Ring Attention) |
+| 14 Distillation | Hinton et al. 2015; Sanh et al. 2019 (DistilBERT); Kim & Rush 2016; Gu et al. 2023 (MiniLLM, reverse KL); Agarwal et al. 2023 (on-policy distillation) |
+| 15 Quantisation | Dettmers et al. 2022 (LLM.int8()); Frantar et al. 2022 (GPTQ); Xiao et al. 2022 (SmoothQuant); Lin et al. 2023 (AWQ); Micikevicius et al. 2022 (FP8 formats); OCP Microscaling (MX) spec |
+| 17 New block designs | [Kimi Team 2026 (Attention Residuals)](https://arxiv.org/pdf/2603.15031.pdf); Gu & Dao 2023 (Mamba) |
+| 18 Beyond next-token | Meta 2024 (Large Concept Models); Assran et al. 2023 (I-JEPA); Huang, LeCun & Balestriero 2025 (LLM-JEPA); [TypeSafe AI's Jev, benchmarked in a 2026 study](https://arxiv.org/pdf/2610.11978) |
+| 19 Multimodality | Dosovitskiy et al. 2020 (ViT); Alayrac et al. 2022 (Flamingo); Liu et al. 2023 (LLaVA); Radford et al. 2022 (Whisper); Yue et al. 2023 (MMMU) |
+| 20 Fine-tuning | Houlsby et al. 2019 (adapters); Hu et al. 2021 (LoRA); Dettmers et al. 2023 (QLoRA); Liu et al. 2024 (DoRA) |
+| 21 Embedding models | Reimers & Gurevych 2019 (Sentence-BERT); Karpukhin et al. 2020 (DPR); Wang et al. 2022 (E5); Muennighoff et al. 2022 (MTEB) |
+| 22 Vector search | Malkov & Yashunin 2016 (HNSW); Jégou et al. 2011 (product quantisation) |
+| 23 Chunking | Günther et al. 2024 (late chunking); vendor write-ups on contextual retrieval |
+| 24 Re-ranking | Nogueira & Cho 2019; Thakur et al. 2021 (BEIR) |
+| 25 Seven types of RAG | Lewis et al. 2020 (RAG); Cormack et al. 2009 (RRF); Gao et al. 2022 (HyDE); Asai et al. 2023 (Self-RAG); Yan et al. 2024 (CRAG); Es et al. 2023 (RAGAS) |
+| 26 Graph and vectorless RAG | Edge et al. 2024 (GraphRAG); Vrandečić & Krötzsch 2014 (Wikidata); [PageIndex by VectifyAI](https://github.com/vectifyai/pageindex) |
+| 27 Agents and ReAct | Yao et al. 2022 (ReAct); Schick et al. 2023 (Toolformer); Shinn et al. 2023 (Reflexion); Anthropic 2024, "Building effective agents" |
+| 28 Context rot | Liu et al. 2023 (Lost in the Middle); Chroma 2025 (context rot report) |
+| 29 Memory | Park et al. 2023 (Generative Agents); Packer et al. 2023 (MemGPT) |
+| 30 Harness engineering | Lab and tool-maker engineering blogs on harnesses and context engineering; [NanoHarness (ETCSLV)](https://github.com/HabitGraylight/NanoHarness) |
+| 31 Loop engineering | Geoffrey Huntley 2025 (Ralph Wiggum technique); Addy Osmani 2026 ("Loop Engineering"); [overview of loop engineering](https://machinelearningmastery.com/an-introduction-to-loop-engineering/) |
+| 32–34 MCP, skills, orchestration | Model Context Protocol specification; Agent Skills specification; Anthropic 2024 on orchestrator–worker patterns |
+| 35 Agent-to-agent | Agent2Agent (A2A) protocol specification |
+| 37 Benchmarks | Hendrycks et al. 2020 (MMLU); Chen et al. 2021 (HumanEval, pass@k); Rein et al. 2023 (GPQA); Jimenez et al. 2023 (SWE-bench); Zheng et al. 2023 (MT-Bench, Chatbot Arena); Liang et al. 2022 (HELM) |
+| 39 Safety and interpretability | Greshake et al. 2023 (indirect prompt injection); Zou et al. 2023 (adversarial suffixes); Wallace et al. 2024 (instruction hierarchy); Bricken et al. 2023 and Templeton et al. 2024 (sparse-autoencoder features); nostalgebraist 2020 (logit lens) |
+| 40 Governance | Mitchell et al. 2019 (Model Cards); Gebru et al. 2018 (Datasheets); NIST AI RMF 1.0 (2023); ISO/IEC 42001 (2023); EU AI Act (2024) |
+
+**Explainers to study for style** (not to copy): Jay Alammar's Illustrated Transformer, 3Blue1Brown's neural-network series, Polo Club's Transformer Explainer, Brendan Bycroft's 3-D LLM visualisation, Distill.pub, Bartosz Ciechanowski's interactive essays.
+
+**Release checklist, run for every module**
+
+- [ ] Maths and claims reviewed by an ML practitioner
+- [ ] Every figure regenerated by the precompute scripts, no hand-typed numbers
+- [ ] Each paper cited with a working link
+- [ ] "What this leaves out" box written
+- [ ] Animation transcript and alt text written
+- [ ] Checked on a mid-range phone, keyboard only, and with reduced motion
+- [ ] Page within the JavaScript budget
+- [ ] Quiz answers tested with two readers
+
+## Open decisions and risks
+
+The biggest risk is scope: 42 modules with custom animations is a large build, so Parts 1–2 ship first as a beta.
+
+**Open decisions**
+
+- [ ] Team and pace: the roadmap assumes one full-time developer who also designs; part-time roughly doubles it.
+- [ ] Astro + React (recommended) or Next.js, and React or Svelte for widgets.
+- [ ] Maths depth: derivations inline behind the Maths toggle, or only in the appendix.
+- [ ] Licence: open content (e.g. CC BY) and open-source code, or closed.
+- [ ] Languages: English only at launch, or Hindi and other Indian languages later.
+- [ ] Site name and domain.
+- [ ] Live demos: recorded traces only, or also a bring-your-own-key live mode.
+- [ ] Confirm Module 18 covers what "context language model" meant (read as Meta's Large Concept Models).
+
+| Risk | Mitigation |
+| --- | --- |
+| Scope creep across 42 modules | Ship Parts 1–2 as beta; freeze each module's widget list before building; sub-pages before new modules |
+| Module 16 goes stale as new models ship | Cards generated from config.json; a "last verified" date per card; quarterly refresh |
+| New 2026 techniques (Attention Residuals, LRKV, TurboQuant, Jev) are not yet widely replicated | Label them "emerging" with the date; quote authors' own claims as claims; revisit each quarter |
+| Agent tooling (MCP, A2A, skills, loop commands) changes quickly | "Last verified" date on each protocol page; teach the concepts and link to the spec rather than copying it |
+| Benchmarks saturate or leak into training data | Teach evaluation technique first; keep the benchmark table data-driven and dated |
+| Live agent and RAG demos cost money | Recorded traces by default; bring-your-own-key live mode with rate limits |
+| Heavy animations stutter on low-end phones | Canvas for large grids; static-frame fallback; test on a mid-range Android phone |
+| Simplified visuals mislead | "What this leaves out" box on every page; expert review before release |
+| In-browser models are slow to download | Keep models small, load only on Run, cache with a service worker |
+| Animation work eats the schedule | Build the shared component library first; each module composes existing parts |
