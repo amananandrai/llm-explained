@@ -355,6 +355,8 @@
       root.appendChild(block('Maths', 'Colours match the pictures: ' + (def.mathsLegend || 'each symbol uses the colour of the thing it computes.'), det));
     }
     if (def.tryit && def.tryit.length) root.appendChild(block('Try it', def.tryitSub || 'Every widget computes its numbers live in your browser.', def.tryit.map((f) => f())));
+    const cells = window.PY_CELLS && window.PY_CELLS[id];
+    if (cells && LLM.util.pyCell) root.appendChild(block('Run it yourself', 'Real Python with NumPy, running in your browser. Edit the code and press Run (or Ctrl+Enter). The first run downloads Python, about 10 MB, and later runs reuse it.', [].concat(cells).map(LLM.util.pyCell)));
     if (def.leaves) root.appendChild(h('section', { class: 'block' }, h('div', { class: 'leaves' }, h('h3', null, 'What this picture leaves out'), h('ul', null, def.leaves.map((l) => h('li', null, rich(l)))))));
     if (def.quiz) root.appendChild(block('Check yourself', 'Three questions. Pick an answer to see why.', quiz(def.quiz)));
     root.appendChild(block('Further reading', 'Primary sources for this module, from the build plan’s reference list. Links checked November 2026.', readingList(id, def.reading)));
@@ -494,11 +496,14 @@
   /* ---------------- router ---------------- */
   const app = () => document.getElementById('app');
   const loaded = {};
-  function loadModule(id) {
-    if (LLM.modules[id]) return Promise.resolve(LLM.modules[id]);
-    const file = 'assets/m/m' + id + '.js';
+  function loadScriptOnce(file) {
     if (!loaded[file]) loaded[file] = new Promise((res, rej) => { const sc = h('script', { src: file }); sc.onload = res; sc.onerror = rej; document.body.appendChild(sc); });
-    return loaded[file].then(() => LLM.modules[id]);
+    return loaded[file];
+  }
+  function cellFile(id) { const n = parseInt(id, 10); return 'assets/py/cells-' + (n <= 9 ? 'a' : n <= 20 ? 'b' : 'c') + '.js'; }
+  function loadModule(id) {
+    const py = Promise.all([loadScriptOnce('assets/pycell.js'), loadScriptOnce(cellFile(id))]).catch(() => null); // optional extras
+    return Promise.all([loadScriptOnce('assets/m/m' + id + '.js'), py]).then(() => LLM.modules[id]);
   }
   LLM.mod = (id, def) => { LLM.modules[id] = def; };
   let current = null;

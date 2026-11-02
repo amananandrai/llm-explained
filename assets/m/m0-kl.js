@@ -3,7 +3,7 @@
   // Grid over x; P is a two-humped mixture, Q a single Gaussian.
   const N = 241, xs = Array.from({ length: N }, (_, i) => -6 + (12 * i) / (N - 1)), dx = 12 / (N - 1);
   const gauss = (x, m, sd) => Math.exp(-0.5 * ((x - m) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI));
-  const P = xs.map((x) => 0.5 * gauss(x, -2, 0.7) + 0.5 * gauss(x, 2.2, 0.8));
+  const P = xs.map((x) => 0.5 * gauss(x, -2.6, 0.7) + 0.5 * gauss(x, 2.4, 0.8));
   const Qd = (m, sd) => xs.map((x) => gauss(x, m, sd));
   const eps = 1e-12;
   const KL = (a, b) => a.reduce((acc, p, i) => acc + (p > 1e-10 ? p * Math.log((p + eps) / (b[i] + eps)) * dx : 0), 0);
@@ -26,7 +26,7 @@
     g.appendChild(s('path', { d: path(q) + `L${fx(6)},${fy(0)}L${fx(-6)},${fy(0)}Z`, fill: 'var(--qdist)', style: 'opacity:.35' }));
     g.appendChild(s('path', { d: path(q), fill: 'none', stroke: 'var(--qdist)', 'stroke-width': 2 }));
     g.appendChild(s('path', { d: path(P), fill: 'none', stroke: 'var(--pdist)', 'stroke-width': 2.5 }));
-    g.appendChild(s('text', { x: fx(-2) - 8, y: fy(0.3) - 6, 'font-size': 13, text: 'P', style: 'font-weight:700' }));
+    g.appendChild(s('text', { x: fx(-2.6) - 8, y: fy(0.3) - 6, 'font-size': 13, text: 'P', style: 'font-weight:700' }));
     g.appendChild(s('text', { x: fx(m) + 6, y: fy(Math.min(gauss(m, m, sd), 0.33)) - 8, 'font-size': 13, text: 'Q', style: 'fill:var(--qdist);font-weight:700' }));
     if (opts.caption) g.appendChild(s('text', { x: 20, y: 18, 'font-size': 13, text: opts.caption, style: 'font-weight:600' }));
     g.appendChild(s('text', { x: 20, y: H - 8, class: 'lbl', text: `Q: mean ${fmt(m)}, width ${fmt(sd)}   ·   KL(P‖Q) = ${fmt(fwd(m, sd))}   ·   KL(Q‖P) = ${fmt(rev(m, sd))}` }));
