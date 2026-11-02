@@ -451,6 +451,46 @@
     return h('div', { class: 'wrap' }, h('header', { class: 'mod-head' }, h('span', { class: 'eyebrow' }, 'Curriculum map'), h('h1', null, '42 modules in seven parts'), h('p', { class: 'hook', style: { fontStyle: 'normal' } }, 'Read top to bottom. Parts 3, 4 and 7 can be read in any order within the part, Part 5 runs in pipeline order, and Part 6 starts with Module 27.')), curriculum(), h('div', { style: { height: '40px' } }));
   }
 
+
+  /* ---------------- linkify citations and module cross-references ---------------- */
+  const EXTRA_CITES = { 'Lu et al. 2022': 'https://arxiv.org/abs/2104.08786' };
+  function citeMaps() {
+    if (LLM._cites) return LLM._cites;
+    const parse = (html) => { const d = document.createElement('div'); d.innerHTML = html; return [...d.querySelectorAll('a')].map((a) => [a.textContent.replace(/\s*\(.*\)\s*$/, '').trim(), a.href]); };
+    const per = {}, global = {}, conflict = new Set();
+    Object.entries(PLAN.papers).forEach(([k, rows]) => { per[k] = {}; rows.forEach((r) => parse(r.refs).forEach(([lab, url]) => {
+      // a label like "Bricken et al. 2023 and Templeton et al. 2024" or "Radford et al. 2018" -> keys per citation
+      (lab.match(/[A-Z][\wÀ-ſ'’-]+(?:,? [A-Z][\wÀ-ſ'’-]+)*(?: et al\.| & [A-Z][\wÀ-ſ'’-]+)? \d{4}/g) || [lab]).forEach((key) => {
+        per[k][key] = url; if (global[key] && global[key] !== url) conflict.add(key); else global[key] = url; });
+    })); });
+    conflict.forEach((c) => delete global[c]);
+    Object.assign(global, EXTRA_CITES);
+    return (LLM._cites = { per, global });
+  }
+  const CITE_RE = /\b([A-Z][\wÀ-ſ'’-]+(?:,? [A-Z][\wÀ-ſ'’-]+)*(?: et al\.| & [A-Z][\wÀ-ſ'’-]+)? (?:19|20)\d{2})\b|\b(Modules?) (\d{1,2})(?:(–|-| and | or |, )(\d{1,2}))?\b/g;
+  const CITE_TEST = new RegExp(CITE_RE.source);
+  function linkify(root, id) {
+    const { per, global } = citeMaps(), local = per[(id || '').split('-')[0]] || {};
+    const skip = (n) => n.parentElement && n.parentElement.closest('a, svg, code, pre, .katex, button, label, select, option, textarea, .reading, .crumbs, .pager, .eyebrow, script, style');
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (skip(n) || !CITE_TEST.test(n.textContent) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    const ext = (url, text) => h('a', { href: url, target: '_blank', rel: 'noopener', class: 'cite' }, text);
+    const mod = (n, text) => (PLAN.modules[n] && n !== (id || '').split('-')[0] ? h('a', { href: '#m' + n, class: 'xref', title: LLM.title(n) }, text) : document.createTextNode(text));
+    nodes.forEach((node) => {
+      const s2 = node.textContent, frag = document.createDocumentFragment(); let last = 0, m; CITE_RE.lastIndex = 0;
+      while ((m = CITE_RE.exec(s2))) {
+        let parts = null;
+        if (m[1]) { const url = local[m[1]] || global[m[1]]; if (url) parts = [ext(url, m[1])]; }
+        else { const a = String(+m[3]); parts = [document.createTextNode(m[2] + ' '), mod(a, m[3])]; if (m[5]) { const b = String(+m[5]); if (m[4] === '–' || m[4] === '-') parts.push(document.createTextNode(m[4]), mod(b, m[5])); else parts.push(document.createTextNode(m[4]), mod(b, m[5])); } }
+        if (!parts) continue;
+        frag.appendChild(document.createTextNode(s2.slice(last, m.index))); parts.forEach((p) => frag.appendChild(p)); last = m.index + m[0].length;
+      }
+      if (last === 0) return;
+      frag.appendChild(document.createTextNode(s2.slice(last))); node.parentNode.replaceChild(frag, node);
+    });
+  }
+  LLM.util.linkify = linkify;
+
   /* ---------------- router ---------------- */
   const app = () => document.getElementById('app');
   const loaded = {};
@@ -475,7 +515,7 @@
       document.title = 'LLM Explained · ' + title(id);
       if (LLM.LIVE.includes(id)) {
         clear(el).appendChild(h('div', { class: 'wrap', style: { padding: '60px 0' } }, h('p', { class: 'muted' }, 'Loading module…')));
-        loadModule(id).then((def) => { if (location.hash.replace(/^#/, '') !== raw) return; clear(el).appendChild(modulePage(id, def)); setDepth(depth); window.scrollTo(0, 0); })
+        loadModule(id).then((def) => { if (location.hash.replace(/^#/, '') !== raw) return; const page = modulePage(id, def); clear(el).appendChild(page); linkify(page, id); setDepth(depth); window.scrollTo(0, 0); })
           .catch(() => { clear(el).appendChild(outlinePage(id.split('-')[0])); });
         return;
       }

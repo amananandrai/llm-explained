@@ -262,3 +262,6 @@ footer.site { border-top: 1px solid var(--rule); padding-block: 26px 40px; color
 .mathblock .katex-display { margin: 0; }
 .widget svg { max-width: 680px; }
 .scrolly .steps, .scrolly .step, .scrolly .step .card, .scrolly .step .card > * { min-width: 0; max-width: 100%; }
+a.cite, a.xref { text-decoration-style: dotted; text-decoration-thickness: 1px; }
+a.cite::after { content: "↗"; font-size: .72em; margin-left: .12em; vertical-align: super; text-decoration: none; display: inline-block; }
+a.cite:hover, a.xref:hover { text-decoration-style: solid; }
