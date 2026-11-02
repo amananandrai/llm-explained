@@ -338,7 +338,9 @@
     const root = h('article', { class: 'wrap' });
     const lab = id === '0-kl' ? 'Module 0 · sub-page' : 'Module ' + id;
     root.appendChild(h('header', { class: 'mod-head' }, crumbs(id), h('div', { class: 'eyebrow' }, lab, LLM.EMERGING.includes(id) ? '  ·  emerging' : ''), h('h1', null, title(id)), h('p', { class: 'hook' }, def.hook),
-      h('div', { class: 'mod-tools' }, depthSwitch(), h('span', { class: 'depth-note' }, 'Intuition: pictures only · Mechanics: tensor shapes · Maths: derivations'))));
+      h('div', { class: 'mod-tools' }, depthSwitch(),
+        window.PY_CELLS && window.PY_CELLS[id] ? h('button', { type: 'button', class: 'btn run-jump', onclick: () => { const el = document.getElementById('run-python'); if (el) { el.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); const ta = el.querySelector('textarea'); if (ta) setTimeout(() => ta.focus({ preventScroll: true }), 500); } } }, '▶ Run the Python') : null,
+        h('span', { class: 'depth-note' }, 'Intuition: pictures only · Mechanics: tensor shapes · Maths: derivations'))));
     if (def.intro) root.appendChild(h('div', { class: 'prose' }, def.intro.map((p) => h('p', null, rich(p)))));
     if (def.hero) root.appendChild(h('section', { class: 'block', style: { borderTop: '0' } }, h('span', { class: 'depth-tag' }, 'Intuition · scroll or use the player'), scrolly(def.hero.steps, def.hero.init)));
     (def.sections || []).forEach((sec) => {
@@ -356,7 +358,7 @@
     }
     if (def.tryit && def.tryit.length) root.appendChild(block('Try it', def.tryitSub || 'Every widget computes its numbers live in your browser.', def.tryit.map((f) => f())));
     const cells = window.PY_CELLS && window.PY_CELLS[id];
-    if (cells && LLM.util.pyCell) root.appendChild(block('Run it yourself', 'Real Python with NumPy, running in your browser. Edit the code and press Run (or Ctrl+Enter). The first run downloads Python, about 10 MB, and later runs reuse it.', [].concat(cells).map(LLM.util.pyCell)));
+    if (cells && LLM.util.pyCell) root.appendChild(Object.assign(block('Run it yourself', 'Real Python with NumPy, running in your browser. Edit the code and press Run (or Ctrl+Enter). The first run downloads Python, about 10 MB, and later runs reuse it.', [].concat(cells).map(LLM.util.pyCell)), { id: 'run-python' }));
     if (def.leaves) root.appendChild(h('section', { class: 'block' }, h('div', { class: 'leaves' }, h('h3', null, 'What this picture leaves out'), h('ul', null, def.leaves.map((l) => h('li', null, rich(l)))))));
     if (def.quiz) root.appendChild(block('Check yourself', 'Three questions. Pick an answer to see why.', quiz(def.quiz)));
     root.appendChild(block('Further reading', 'Primary sources for this module, from the build plan’s reference list. Links checked November 2026.', readingList(id, def.reading)));
@@ -394,7 +396,7 @@
     const live = LLM.LIVE.includes(id);
     return h('a', { class: 'mod-card', href: '#m' + id },
       h('span', { class: 'num' }, h('span', null, id === '0-kl' ? 'M0 · sub-page' : 'M' + id), LLM.EMERGING.includes(id) ? h('span', { class: 'badge emerging' }, 'Emerging') : live ? h('span', { class: 'badge live' }, 'Interactive') : h('span', { class: 'badge queued' }, 'Outline')),
-      h('span', { class: 't' }, title(id)), h('span', { class: 'lbl muted', style: { fontSize: '.8rem', fontFamily: 'var(--f-mono)' } }, live ? 'Hero animation · widgets · quiz' : 'Plan, maths & reading list'));
+      h('span', { class: 't' }, title(id)), h('span', { class: 'lbl muted', style: { fontSize: '.8rem', fontFamily: 'var(--f-mono)' } }, live ? 'Animation · widgets · Python · quiz' : 'Plan, maths & reading list'));
   }
   function curriculum() {
     return h('div', { class: 'parts' }, PLAN.parts.map((p) => {
@@ -440,7 +442,7 @@
         h('div', { class: 'cta' }, h('a', { class: 'btn primary', href: '#m0' }, 'Start with the maths primer'), h('a', { class: 'btn', href: '#m5' }, 'Jump to attention'), h('a', { class: 'btn', href: '#map' }, 'Curriculum map'))),
       heroAttention()));
     root.appendChild(h('section', { class: 'wrap section' }, h('h2', null, 'How every page works'), h('p', null, 'Each module follows one template: a hook question, a scroll-driven picture, the mechanics, the maths, a widget you control, an honest note on what the picture leaves out, and a three-question check.'),
-      h('ol', { class: 'principles' }, [['Picture first, symbol second', 'Equations sit beside the animation that computes them, in matching colours.'], ['One idea per scroll step', 'Animations advance with you and never autoplay past you.'], ['Real numbers at toy scale', 'Small vectors and short sentences, so every value fits on screen.'], ['Touch the knob', 'Every module has at least one widget you control.'], ['Three depths', 'Switch between Intuition, Mechanics and Maths on any page.'], ['Honest limits', 'Each module ends with what its picture leaves out.']].map(([b, t], i) => h('li', null, h('span', { class: 'n' }, String(i + 1)), h('span', null, h('b', null, b), '. ', t))))));
+      h('ol', { class: 'principles' }, [['Picture first, symbol second', 'Equations sit beside the animation that computes them, in matching colours.'], ['One idea per scroll step', 'Animations advance with you and never autoplay past you.'], ['Real numbers at toy scale', 'Small vectors and short sentences, so every value fits on screen.'], ['Touch the knob', 'Every module has at least one widget you control.'], ['Run it yourself', 'Every module ends with editable Python and NumPy that runs in your browser.'], ['Three depths', 'Switch between Intuition, Mechanics and Maths on any page.'], ['Honest limits', 'Each module ends with what its picture leaves out.']].map(([b, t], i) => h('li', null, h('span', { class: 'n' }, String(i + 1)), h('span', null, h('b', null, b), '. ', t))))));
     root.appendChild(h('section', { class: 'wrap section', id: 'curriculum' }, h('h2', null, 'Curriculum'), h('p', null, `Parts 1 and 2 are a strict sequence and everything after builds on Module 5. All ${liveCount} pages are interactive: each has a scroll-driven hero animation, widgets you control and a three-question check.`), curriculum()));
     root.appendChild(legendSection());
     return root;

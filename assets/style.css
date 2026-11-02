@@ -265,3 +265,6 @@ footer.site { border-top: 1px solid var(--rule); padding-block: 26px 40px; color
 a.cite, a.xref { text-decoration-style: dotted; text-decoration-thickness: 1px; }
 a.cite::after { content: "↗"; font-size: .72em; margin-left: .12em; vertical-align: super; text-decoration: none; display: inline-block; }
 a.cite:hover, a.xref:hover { text-decoration-style: solid; }
+.btn.run-jump { border-color: var(--pass); color: var(--ink); font-family: var(--f-mono); font-size: .82rem; }
+.btn.run-jump:hover { background: color-mix(in srgb, var(--pass) 12%, var(--surface)); }
+#run-python { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 70px); }
