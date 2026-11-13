@@ -231,7 +231,7 @@ q=\mathrm{clamp}\!\Big(\mathrm{round}\big(\tfrac{x}{s}\big)+z,\;0,\;2^{b}-1\Big)
 - **Data source:** each card is generated from the model's published config.json by a script, so numbers are never hand-typed and a refresh is one command.
 - **Hero animation:** an evolution timeline where one block diagram morphs as each innovation is applied, with model names appearing at the step that introduced it.
 - **Interactives:** architecture diff (pick two models; their block diagrams highlight the differences); parameter-count calculator that reproduces each model's published size from its config.
-- **Architecture diagrams:** one block diagram per model (Llama, Mistral and Mixtral, Qwen, DeepSeek, Kimi, Gemma, Phi, gpt-oss) drawn from its config, with insets for the attention heads and the experts, a strip showing every layer's type, and a chip for each concept linking to the module that teaches it; a concept-by-model matrix. The same diagrams form the standalone architecture atlas page (`#arch`).
+- **Architecture diagrams:** one block diagram per model (Llama, Mistral and Mixtral, Qwen, DeepSeek, Kimi, Gemma, Phi, gpt-oss) drawn from its config, with insets for the attention heads and the experts, a strip showing every layer's type, and a chip for each concept linking to the module that teaches it; a concept-by-model matrix. The same diagrams form the standalone architecture atlas page (`#arch`). The atlas also carries a gallery of about 120 further architectures built from the public metadata snapshot of Sebastian Raschka's LLM Architecture Gallery (Apache 2.0, refreshed quarterly by `scripts/build_gallery.py`), each shown as a layer strip and a schematic.
 
 #### Module 17 · New block designs: Attention Residuals and beyond
 
