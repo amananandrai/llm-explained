@@ -17,13 +17,9 @@
       LLM Explained
     </a>
     <span class="spacer"></span>
-    <nav aria-label="Main">
-      <a href="#">Home</a>
-      <a href="#map">Curriculum</a>
-      <a href="#m5">Attention</a>
-      <a href="#m7">GPTs</a>
-    </nav>
+    <nav id="nav" aria-label="Main"></nav>
   </div>
+  <div id="menu" class="menu" hidden></div>
 </header>
 
 <main id="app" tabindex="-1">
@@ -32,7 +28,8 @@
 
 <footer class="site">
   <div class="wrap">
-    LLM Explained · 43 interactive pages across seven parts and a capstone. Every number on screen is computed in your browser; simulations and illustrative figures are labelled as such.
+    <nav aria-label="Footer"><a href="#">Home</a><a href="#map">Curriculum</a><a href="#arch">Architecture atlas</a><a href="#m0">Start at Module 0</a><a href="https://github.com/amananandrai/llm-explained" target="_blank" rel="noopener">Source on GitHub</a></nav>
+    <p>LLM Explained · 43 interactive pages across seven parts and a capstone, plus an architecture atlas. Every number on screen is computed in your browser; simulations and illustrative figures are labelled as such.</p>
   </div>
 </footer>
 
@@ -40,4 +37,5 @@
 <script src="assets/data.js"></script>
 <script src="assets/core.js"></script>
 <script src="assets/kit.js"></script>
+<script src="assets/arch.js"></script>
 <script>LLM.start();</script>

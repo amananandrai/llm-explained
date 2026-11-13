@@ -333,6 +333,15 @@
     return h('section', { class: 'block ' + (cls || '') }, h('h2', null, titleText), sub ? h('p', { class: 'sub' }, rich(sub)) : null, kids);
   }
 
+  /* "On this page" jump row: one chip per h2 section of a page */
+  function onPage(root) {
+    const secs = [...root.querySelectorAll('section.block')].map((el) => { const h2 = el.querySelector(':scope > h2'); const lab = h2 ? h2.textContent : el.dataset.nav; return lab ? [el, lab] : null; }).filter(Boolean);
+    if (secs.length < 3) return null;
+    return h('nav', { class: 'onpage', 'aria-label': 'On this page' }, h('span', { class: 'eyebrow' }, 'On this page'),
+      secs.map(([el, lab]) => h('button', { type: 'button', class: (el.className.match(/d-(mech|maths)/) || [''])[0], onclick: () => el.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }) }, lab.replace(/^\d+ · /, ''))));
+  }
+  LLM.util.onPage = onPage;
+
   /* full module page from a definition */
   function modulePage(id, def) {
     const root = h('article', { class: 'wrap' });
@@ -342,7 +351,7 @@
         window.PY_CELLS && window.PY_CELLS[id] ? h('button', { type: 'button', class: 'btn run-jump', onclick: () => { const el = document.getElementById('run-python'); if (el) { el.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); const ta = el.querySelector('textarea'); if (ta) setTimeout(() => ta.focus({ preventScroll: true }), 500); } } }, '▶ Run the Python') : null,
         h('span', { class: 'depth-note' }, 'Intuition: pictures only · Mechanics: tensor shapes · Maths: derivations'))));
     if (def.intro) root.appendChild(h('div', { class: 'prose' }, def.intro.map((p) => h('p', null, rich(p)))));
-    if (def.hero) root.appendChild(h('section', { class: 'block', style: { borderTop: '0' } }, h('span', { class: 'depth-tag' }, 'Intuition · scroll or use the player'), scrolly(def.hero.steps, def.hero.init)));
+    if (def.hero) root.appendChild(h('section', { class: 'block', 'data-nav': 'Animation', style: { borderTop: '0' } }, h('span', { class: 'depth-tag' }, 'Intuition · scroll or use the player'), scrolly(def.hero.steps, def.hero.init)));
     (def.sections || []).forEach((sec) => {
       const kids = [];
       if (sec.depth) kids.push(h('span', { class: 'depth-tag' }, sec.depth === 'maths' ? 'Maths' : 'Mechanics'));
@@ -363,6 +372,7 @@
     if (def.quiz) root.appendChild(block('Check yourself', 'Three questions. Pick an answer to see why.', quiz(def.quiz)));
     root.appendChild(block('Further reading', 'Primary sources for this module, from the build plan’s reference list. Links checked November 2026.', readingList(id, def.reading)));
     root.appendChild(pager(id));
+    const op = onPage(root); if (op) root.querySelector('.mod-head').appendChild(op);
     return root;
   }
 
@@ -402,7 +412,8 @@
     return h('div', { class: 'parts' }, PLAN.parts.map((p) => {
       const ids = p.n === 1 ? ['0', '0-kl'].concat(p.modules.slice(1)) : p.modules;
       return h('section', null, h('div', { class: 'part-head' }, h('span', { class: 'eyebrow' }, p.n === 8 ? 'Capstone' : 'Part ' + p.n), h('h3', null, p.title), h('span', { class: 'note' }, '· ' + PART_NOTES[p.n])), h('div', { class: 'mod-grid' }, ids.map(modCard)));
-    }));
+    }).concat(h('section', null, h('div', { class: 'part-head' }, h('span', { class: 'eyebrow' }, 'Reference'), h('h3', null, 'Look things up'), h('span', { class: 'note' }, '· Any time')),
+      h('div', { class: 'mod-grid' }, h('a', { class: 'mod-card', href: '#arch' }, h('span', { class: 'num' }, h('span', null, 'Atlas'), h('span', { class: 'badge live' }, 'Interactive')), h('span', { class: 't' }, 'Architecture atlas'), h('span', { class: 'lbl muted', style: { fontSize: '.8rem', fontFamily: 'var(--f-mono)' } }, 'Transformer + 14 open models'))))));
   }
   const LEGEND = [['var(--fwd)', 'Forward pass (solid arrows)'], ['var(--grad)', 'Gradients (dashed, amber)'], ['var(--q)', 'Query · Q'], ['var(--k)', 'Key · K'], ['var(--v)', 'Value · V'], ['var(--res)', 'Residual stream'], ['var(--qdist)', 'Distribution Q in KL (filled violet)'], ['var(--kv)', 'KV cache blocks'], ['var(--pass)', 'Pass'], ['var(--warn)', 'Needs review'], ['var(--fail)', 'Fail']];
   function heroAttention() {
@@ -433,17 +444,26 @@
     draw();
     return h('figure', { class: 'hero-viz', style: { margin: 0 } }, g, h('figcaption', null, 'Hover a row: each token’s attention over the tokens before it. Module 5 builds this matrix from real numbers, one cell at a time.'));
   }
+  const WAYS = [
+    ['#m0', 'New to this', 'Start from zero', 'Vectors, training, tokens and embeddings. No background assumed.', 'Modules 0–4'],
+    ['#m5', 'Know some ML', 'Go straight to the transformer', 'Attention, the block, the three shapes and how a GPT generates text.', 'Modules 5–9'],
+    ['#arch', 'Want the big picture', 'See real models as diagrams', 'The transformer block by block, then DeepSeek, Qwen, Mistral, Llama and others drawn from their configs.', 'Architecture atlas'],
+    ['#m21', 'Building products', 'Retrieval, agents and production', 'RAG pipelines, agent harnesses, evaluation and safety.', 'Modules 21–40'],
+  ];
   function homePage() {
     const root = h('div');
     const liveCount = LLM.LIVE.length;
+    const last = lastVisited();
     root.appendChild(h('section', { class: 'wrap hero' },
       h('div', null, h('span', { class: 'eyebrow' }, '42 modules · 7 parts · free'), h('h1', null, 'See how a language model works, one picture at a time.'),
         h('p', { class: 'lede' }, 'From why RNNs hit a wall to how a production agent retrieves, reasons, acts and is evaluated. Every concept appears as an interactive picture before its equation, at toy scale: 4‑dimensional embeddings and five‑token sentences, so every number fits on screen.'),
-        h('div', { class: 'cta' }, h('a', { class: 'btn primary', href: '#m0' }, 'Start with the maths primer'), h('a', { class: 'btn', href: '#m5' }, 'Jump to attention'), h('a', { class: 'btn', href: '#map' }, 'Curriculum map'))),
+        h('div', { class: 'cta' }, last ? h('a', { class: 'btn primary', href: '#m' + last }, 'Resume Module ' + last.split('-')[0]) : h('a', { class: 'btn primary', href: '#m0' }, 'Start with Module 0'), h('a', { class: 'btn', href: '#map' }, 'Browse the curriculum'))),
       heroAttention()));
-    root.appendChild(h('section', { class: 'wrap section' }, h('h2', null, 'How every page works'), h('p', null, 'Each module follows one template: a hook question, a scroll-driven picture, the mechanics, the maths, a widget you control, an honest note on what the picture leaves out, and a three-question check.'),
-      h('ol', { class: 'principles' }, [['Picture first, symbol second', 'Equations sit beside the animation that computes them, in matching colours.'], ['One idea per scroll step', 'Animations advance with you and never autoplay past you.'], ['Real numbers at toy scale', 'Small vectors and short sentences, so every value fits on screen.'], ['Touch the knob', 'Every module has at least one widget you control.'], ['Run it yourself', 'Every module ends with editable Python and NumPy that runs in your browser.'], ['Three depths', 'Switch between Intuition, Mechanics and Maths on any page.'], ['Honest limits', 'Each module ends with what its picture leaves out.']].map(([b, t], i) => h('li', null, h('span', { class: 'n' }, String(i + 1)), h('span', null, h('b', null, b), '. ', t))))));
+    root.appendChild(h('section', { class: 'wrap section' }, h('h2', null, 'Where to start'), h('p', null, 'Four ways in, depending on what you already know.'),
+      h('div', { class: 'ways' }, WAYS.map(([href, who, t2, d, where]) => h('a', { class: 'way', href }, h('span', { class: 'eyebrow' }, who), h('b', null, t2), h('span', { class: 'd' }, d), h('span', { class: 'go' }, where + ' →'))))));
     root.appendChild(h('section', { class: 'wrap section', id: 'curriculum' }, h('h2', null, 'Curriculum'), h('p', null, `Parts 1 and 2 are a strict sequence and everything after builds on Module 5. All ${liveCount} pages are interactive: each has a scroll-driven hero animation, widgets you control and a three-question check.`), curriculum()));
+    root.appendChild(h('section', { class: 'wrap section' }, h('h2', null, 'How every page works'), h('p', null, 'Each module follows one template: a hook question, a scroll-driven picture, the mechanics, the maths, a widget you control, an honest note on what the picture leaves out, and a three-question check.'),
+      h('ol', { class: 'principles' }, [['Picture first, symbol second', 'Equations sit beside the animation that computes them, in matching colours.'], ['One idea per scroll step', 'Animations advance with you and never autoplay past you.'], ['Real numbers at toy scale', 'Small vectors and short sentences, so every value fits on screen.'], ['Touch the knob', 'Every module has at least one widget you control.'], ['Run it yourself', 'Every module ends with editable Python and NumPy that runs in your browser.'], ['Three depths', 'Switch between Intuition, Mechanics and Maths on any page.'], ['Honest limits', 'Each module ends with what its picture leaves out.']].map(([b2, t2], i) => h('li', null, h('span', { class: 'n' }, String(i + 1)), h('span', null, h('b', null, b2), '. ', t2))))));
     root.appendChild(legendSection());
     return root;
   }
@@ -495,6 +515,46 @@
   }
   LLM.util.linkify = linkify;
 
+  /* ---------------- top bar: two destinations, a module menu and one forward action ---------------- */
+  function lastVisited() { try { const v = localStorage.getItem('llmx-last'); return v && LLM.ORDER.includes(v) ? v : null; } catch (e) { return null; } }
+  const bar = {};
+  function buildTopbar() {
+    const nav = document.getElementById('nav'), panel = document.getElementById('menu');
+    if (!nav || !panel) return;
+    const close = () => { panel.hidden = true; bar.btn.setAttribute('aria-expanded', 'false'); };
+    const toggle = () => { const open = panel.hidden; panel.hidden = !open; bar.btn.setAttribute('aria-expanded', String(open)); if (open) { const cur = panel.querySelector('[aria-current]'); if (cur) cur.scrollIntoView({ block: 'nearest' }); } };
+    bar.close = close;
+    bar.links = [h('a', { class: 'nav-link', href: '#map' }, 'Curriculum'), h('a', { class: 'nav-link', href: '#arch' }, 'Architectures')];
+    bar.label = h('span', null, 'Modules');
+    bar.btn = h('button', { type: 'button', class: 'nav-menu', 'aria-expanded': 'false', 'aria-controls': 'menu', onclick: toggle }, bar.label, h('span', { class: 'caret', 'aria-hidden': 'true' }, '▾'));
+    bar.go = h('a', { class: 'btn primary nav-go' });
+    append(nav, [bar.links, bar.btn, bar.go]);
+    const link = (href, text, n) => h('a', { href }, n != null ? h('span', { class: 'n' }, n) : null, h('span', null, text));
+    panel.appendChild(h('div', { class: 'menu-in' },
+      h('div', { class: 'menu-top' }, link('#', 'Home'), link('#map', 'Curriculum'), link('#arch', 'Architecture atlas')),
+      h('div', { class: 'menu-grid' }, PLAN.parts.map((p) => {
+        const ids = p.n === 1 ? ['0', '0-kl'].concat(p.modules.slice(1)) : p.modules;
+        return h('section', null, h('div', { class: 'eyebrow' }, p.n === 8 ? 'Capstone' : 'Part ' + p.n), h('h4', null, p.title), ids.map((id) => link('#m' + id, title(id), id === '0-kl' ? '0b' : id)));
+      }), h('section', null, h('div', { class: 'eyebrow' }, 'Reference'), h('h4', null, 'Look things up'), link('#arch', 'Architecture atlas', '◆'), link('#map', 'Curriculum map', '◆')))));
+    panel.addEventListener('click', (e) => { if (e.target.closest('a')) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { close(); bar.btn.focus(); } });
+    document.addEventListener('click', (e) => { if (!panel.hidden && !e.target.closest('.topbar')) close(); });
+  }
+  function updateTopbar(raw) {
+    if (!bar.btn) return;
+    bar.close();
+    const m = raw.match(/^m(\d+(?:-kl)?)$/), id = m && LLM.ORDER.includes(m[1]) ? m[1] : null;
+    bar.links.forEach((a) => (a.getAttribute('href') === '#' + raw ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+    document.querySelectorAll('#menu a').forEach((a) => (raw && a.getAttribute('href') === '#' + raw ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+    bar.label.textContent = id ? (id === '0-kl' ? 'Module 0 · KL' : 'Module ' + id) : 'Modules';
+    bar.btn.classList.toggle('on', !!id);
+    if (id) { try { localStorage.setItem('llmx-last', id); } catch (e) {} }
+    const next = id ? LLM.ORDER[LLM.ORDER.indexOf(id) + 1] : null, last = lastVisited();
+    const [href, text, short] = id ? (next ? ['#m' + next, 'Next: Module ' + next.split('-')[0] + (next === '0-kl' ? ' · KL' : '') + ' →', 'Next →'] : ['#map', 'Back to the curriculum', 'Curriculum']) : last ? ['#m' + last, 'Resume Module ' + last.split('-')[0], 'Resume'] : ['#m0', 'Start learning', 'Start'];
+    bar.go.setAttribute('href', href); bar.go.setAttribute('aria-label', text);
+    clear(bar.go).append(h('span', { class: 'long' }, text), h('span', { class: 'short' }, short));
+  }
+
   /* ---------------- router ---------------- */
   const app = () => document.getElementById('app');
   const loaded = {};
@@ -514,7 +574,7 @@
     const el = app();
     if (current && current._cleanup) current._cleanup();
     el.querySelectorAll('.scrolly').forEach((sc) => sc._cleanup && sc._cleanup());
-    document.querySelectorAll('.topbar nav a').forEach((a) => a.removeAttribute('aria-current'));
+    updateTopbar(raw);
     let view;
     const m = raw.match(/^m(\d+(?:-kl)?)$/);
     if (m && (PLAN.modules[m[1]] || m[1] === '0-kl')) {
@@ -527,12 +587,12 @@
         return;
       }
       view = outlinePage(id);
-    } else if (raw === 'map') { view = mapPage(); document.title = 'LLM Explained · Curriculum'; }
+    } else if (raw === 'arch' && LLM.arch) { view = LLM.arch.page(); linkify(view); document.title = 'LLM Explained · Architecture atlas'; }
+    else if (raw === 'map') { view = mapPage(); document.title = 'LLM Explained · Curriculum'; }
     else { view = homePage(); document.title = 'LLM Explained'; }
     clear(el).appendChild(view);
-    const nav = document.querySelector(`.topbar nav a[href="#${raw || ''}"]`); if (nav) nav.setAttribute('aria-current', 'page');
     setDepth(depth);
     window.scrollTo(0, 0);
   }
-  LLM.start = () => { document.body.dataset.depth = depth; window.addEventListener('hashchange', render); render(); };
+  LLM.start = () => { document.body.dataset.depth = depth; buildTopbar(); window.addEventListener('hashchange', render); render(); };
 })();
