@@ -8,6 +8,7 @@ A scroll-driven, interactive course on how large language models work, built fro
 
 - **All 43 pages interactive:** Modules 0–41 plus the Module 0 KL sub-page. Each page follows the plan's template: hook, scroll-driven hero animation with play/step/scrub controls and a text transcript, the Intuition / Mechanics / Maths depth switch, colour-linked KaTeX maths, widgets, "what this picture leaves out", a 3-question quiz and further reading.
 - **Architecture atlas (`#arch`):** the transformer drawn block by block in three eras (2017 encoder–decoder, GPT-style decoder, modern open-model block), then one diagram per open-weight model (Llama, Mistral, Mixtral, Qwen, DeepSeek, Kimi K2, Gemma, Phi, gpt-oss) generated from its configuration, plus a concept-by-model matrix. Every block links to the module that teaches it. The same widgets appear in Modules 6 and 16.
+- **Navigation:** the top bar has two destinations (Curriculum, Architectures), a Modules menu listing every module by part with the current one marked, and one forward button (Start, Resume or Next module). Each page has an “On this page” row that jumps to its sections. The home page opens with four starting points before the full curriculum.
 - **Plan-driven data:** `scripts/build_data.py` parses the build plan into `assets/data.js` (curriculum, tables, reading lists). If a module script fails to load, the page falls back to an outline generated from the plan.
 
 ## Run locally

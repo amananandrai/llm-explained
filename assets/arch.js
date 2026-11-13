@@ -424,7 +424,7 @@
   function page() {
     const P = (t) => h('p', { html: t });
     const sec = (title, sub, kids) => h('section', { class: 'block' }, h('h2', null, title), sub ? h('p', { class: 'sub', html: sub }) : null, kids);
-    return h('article', { class: 'wrap' },
+    const root = h('article', { class: 'wrap' },
       h('header', { class: 'mod-head' }, h('div', { class: 'crumbs' }, h('a', { href: '#map' }, 'Curriculum'), '/', h('span', null, 'Reference')), h('div', { class: 'eyebrow' }, 'Architecture atlas'), h('h1', null, 'The transformer and the open models built on it'),
         h('p', { class: 'hook' }, 'One diagram, drawn three times as the design evolved, then redrawn for each open-weight model so you can see exactly which ideas each one uses.')),
       h('div', { class: 'prose' }, P('Every large language model you can download today is the same machine: a stack of identical blocks, each with an attention layer and a feed-forward layer joined by a residual stream. The models differ in a short list of part choices. This page shows the machine first, then each model as a set of choices, with a link from every part to the module that teaches it.')),
@@ -439,6 +439,8 @@
           'Licence terms. The label is a pointer; read the licence itself before you ship.'].map((t) => h('li', null, t))))),
       sec('Go deeper', null, h('ul', { class: 'reading' }, [[5, 'the block itself'], [6, 'the three shapes and their masks'], [10, 'MHA, GQA and MLA'], [11, 'the KV cache'], [12, 'mixture of experts'], [16, 'spec cards, parameter counter and architecture diff']].map(([id, t]) => h('li', null, '· ', modLink(id), ': ' + t)))),
       h('div', { style: { height: '30px' } }));
+    const op = LLM.util.onPage(root); if (op) root.querySelector('.mod-head').appendChild(op);
+    return root;
   }
 
   LLM.arch = { MODELS, FAMILIES, count, kvCache, attnLabel, transformerDiagram, modelDiagram, conceptMatrix, page };
