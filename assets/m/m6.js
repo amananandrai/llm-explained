@@ -98,6 +98,7 @@
       ],
       init: heroInit,
     },
+    sections: [{ title: 'The whole architecture on one page', sub: 'The three towers above are simplifications of this diagram. Start with the 2017 original, then switch eras to see what was deleted and what was swapped. The <a href="#arch">architecture atlas</a> continues with one diagram per open model.', widget: () => LLM.arch.transformerDiagram() }],
     maths: [
       { note: '<b>Masked LM</b> loss over the set of masked positions 𝓜, conditioning on the whole corrupted input:', tex: '\\mathcal{L}_{\\text{MLM}}=-\\sum_{i\\in\\mathcal{M}}\\log P\\big(x_i\\mid \\tilde{x}\\big)' },
       { note: '<b>Causal LM</b> loss over every position, conditioning only on the past:', tex: '\\mathcal{L}_{\\text{CLM}}=-\\sum_{t=1}^{T}\\log P\\big(x_t\\mid x_{<t}\\big)' },

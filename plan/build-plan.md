@@ -118,7 +118,7 @@ h_t=\tanh(W_h h_{t-1}+W_x x_t+b),\qquad \frac{\partial h_T}{\partial h_1}=\prod_
 - **Covers:** the original 2017 encoder–decoder; bidirectional encoders (BERT, masked LM); decoder-only models (GPT, causal LM); encoder–decoder models (T5, BART, span corruption); cross-attention; which shape suits classification, translation or open generation; why decoder-only won for general-purpose LLMs.
 - **Maths:** masked-LM loss over masked positions vs causal-LM loss over every next token; the mask matrix for each design.
 - **Hero animation:** three towers side by side with their attention masks drawn as a full square, a lower triangle, and a square plus triangle joined by a cross-attention bridge.
-- **Interactives:** mask painter (toggle mask cells and see which tokens can see each other); task picker that highlights the matching architecture.
+- **Interactives:** mask painter (toggle mask cells and see which tokens can see each other); task picker that highlights the matching architecture; the full architecture diagram (after Figure 1 of the 2017 paper) with every block clickable, switchable between the 2017 encoder–decoder, the GPT-style decoder and the modern open-model block.
 
 #### Module 7 · GPTs: from pretraining to generation
 
@@ -231,6 +231,7 @@ q=\mathrm{clamp}\!\Big(\mathrm{round}\big(\tfrac{x}{s}\big)+z,\;0,\;2^{b}-1\Big)
 - **Data source:** each card is generated from the model's published config.json by a script, so numbers are never hand-typed and a refresh is one command.
 - **Hero animation:** an evolution timeline where one block diagram morphs as each innovation is applied, with model names appearing at the step that introduced it.
 - **Interactives:** architecture diff (pick two models; their block diagrams highlight the differences); parameter-count calculator that reproduces each model's published size from its config.
+- **Architecture diagrams:** one block diagram per model (Llama, Mistral and Mixtral, Qwen, DeepSeek, Kimi, Gemma, Phi, gpt-oss) drawn from its config, with insets for the attention heads and the experts, a strip showing every layer's type, and a chip for each concept linking to the module that teaches it; a concept-by-model matrix. The same diagrams form the standalone architecture atlas page (`#arch`).
 
 #### Module 17 · New block designs: Attention Residuals and beyond
 

@@ -439,11 +439,12 @@
     root.appendChild(h('section', { class: 'wrap hero' },
       h('div', null, h('span', { class: 'eyebrow' }, '42 modules · 7 parts · free'), h('h1', null, 'See how a language model works, one picture at a time.'),
         h('p', { class: 'lede' }, 'From why RNNs hit a wall to how a production agent retrieves, reasons, acts and is evaluated. Every concept appears as an interactive picture before its equation, at toy scale: 4‑dimensional embeddings and five‑token sentences, so every number fits on screen.'),
-        h('div', { class: 'cta' }, h('a', { class: 'btn primary', href: '#m0' }, 'Start with the maths primer'), h('a', { class: 'btn', href: '#m5' }, 'Jump to attention'), h('a', { class: 'btn', href: '#map' }, 'Curriculum map'))),
+        h('div', { class: 'cta' }, h('a', { class: 'btn primary', href: '#m0' }, 'Start with the maths primer'), h('a', { class: 'btn', href: '#m5' }, 'Jump to attention'), h('a', { class: 'btn', href: '#arch' }, 'Architecture diagrams'), h('a', { class: 'btn', href: '#map' }, 'Curriculum map'))),
       heroAttention()));
     root.appendChild(h('section', { class: 'wrap section' }, h('h2', null, 'How every page works'), h('p', null, 'Each module follows one template: a hook question, a scroll-driven picture, the mechanics, the maths, a widget you control, an honest note on what the picture leaves out, and a three-question check.'),
       h('ol', { class: 'principles' }, [['Picture first, symbol second', 'Equations sit beside the animation that computes them, in matching colours.'], ['One idea per scroll step', 'Animations advance with you and never autoplay past you.'], ['Real numbers at toy scale', 'Small vectors and short sentences, so every value fits on screen.'], ['Touch the knob', 'Every module has at least one widget you control.'], ['Run it yourself', 'Every module ends with editable Python and NumPy that runs in your browser.'], ['Three depths', 'Switch between Intuition, Mechanics and Maths on any page.'], ['Honest limits', 'Each module ends with what its picture leaves out.']].map(([b, t], i) => h('li', null, h('span', { class: 'n' }, String(i + 1)), h('span', null, h('b', null, b), '. ', t))))));
     root.appendChild(h('section', { class: 'wrap section', id: 'curriculum' }, h('h2', null, 'Curriculum'), h('p', null, `Parts 1 and 2 are a strict sequence and everything after builds on Module 5. All ${liveCount} pages are interactive: each has a scroll-driven hero animation, widgets you control and a three-question check.`), curriculum()));
+    root.appendChild(h('section', { class: 'wrap section' }, h('h2', null, 'Architecture atlas'), h('p', null, 'The transformer drawn block by block, then redrawn for DeepSeek, Qwen, Mistral, Llama, Gemma, Kimi, Phi and gpt-oss from their published configurations. Every part links to the module that teaches it.'), h('div', { class: 'cta', style: { display: 'flex', marginTop: '14px' } }, h('a', { class: 'btn primary', href: '#arch' }, 'Open the architecture atlas'))));
     root.appendChild(legendSection());
     return root;
   }
@@ -527,7 +528,8 @@
         return;
       }
       view = outlinePage(id);
-    } else if (raw === 'map') { view = mapPage(); document.title = 'LLM Explained · Curriculum'; }
+    } else if (raw === 'arch' && LLM.arch) { view = LLM.arch.page(); linkify(view); document.title = 'LLM Explained · Architecture atlas'; }
+    else if (raw === 'map') { view = mapPage(); document.title = 'LLM Explained · Curriculum'; }
     else { view = homePage(); document.title = 'LLM Explained'; }
     clear(el).appendChild(view);
     const nav = document.querySelector(`.topbar nav a[href="#${raw || ''}"]`); if (nav) nav.setAttribute('aria-current', 'page');
