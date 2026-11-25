@@ -262,7 +262,7 @@
       { note: '<b>RMSNorm</b> with learned gain g:', tex: '\\mathrm{RMSNorm}(x)=\\frac{x}{\\sqrt{\\tfrac{1}{d}\\sum_i x_i^2+\\epsilon}}\\odot g' },
     ],
     mathsLegend: 'blue is query, orange is key, green is value.',
-    tryit: [sqrtToggle, headViewer],
+    tryit: [sqrtToggle, headViewer].concat(LLM.real && LLM.real.hasModel ? [LLM.real.attentionWidget] : []),
     leaves: [
       'Real models use d_model in the thousands and dozens of heads; the grid here is 5 × 4 so every number fits.',
       'The weights here are random, so the attention pattern means nothing. Trained weights are what make heads specialise.',

@@ -167,8 +167,8 @@
       { note: '<b>BPE</b> repeatedly merges the most frequent adjacent pair:', tex: '(a^*,b^*)=\\arg\\max_{(a,b)}\\;\\sum_{w\\in\\text{corpus}} f(w)\\cdot \\#_{w}(a,b)' },
       { note: '<b>Unigram</b> picks the segmentation x of a string that maximises total log probability, found with the Viterbi algorithm:', tex: 'x^*=\\arg\\max_{x\\in S(\\text{text})}\\sum_{i}\\log p(x_i)' },
     ],
-    tryit: [playground, languages],
-    leaves: ['The toy BPE has a tiny vocabulary and narrow training text, so it fragments more than GPT-style tokenizers.', 'Real tokenizers add rules for digits, whitespace runs and special tokens that this page skips.', 'Comparing with real GPT or Llama tokenizers needs their vocab files; the build plan loads them with transformers.js in a later phase.'],
+    tryit: [playground].concat(LLM.real ? [LLM.real.tokenizerWidget] : [], [languages]),
+    leaves: ['The toy BPE has a tiny vocabulary and narrow training text, so it fragments more than GPT-style tokenizers.', 'Real tokenizers add rules for digits, whitespace runs and special tokens that this page skips.', 'The real tokenizers above are four public vocabularies; gated ones such as Llama and Gemma are not included, and chat templates are not applied.'],
     quiz: [
       { q: 'Why does byte-level BPE never need an “unknown” token?', opts: ['Its vocabulary includes every word', 'Any text is a sequence of the 256 possible bytes, which are all in the base vocabulary', 'It deletes characters it does not know', 'It uses a larger embedding'], a: 1, why: 'The base vocabulary covers every byte value, so anything can fall back to bytes.' },
       { q: 'Doubling vocabulary size from 50k to 100k with d_model = 4096 adds how many embedding parameters?', opts: ['≈ 4M', '≈ 205M', '≈ 50k', '≈ 2B'], a: 1, why: '50,000 extra rows × 4,096 = 204.8M (and as many again if the output layer is not tied).' },
