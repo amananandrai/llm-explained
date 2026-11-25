@@ -150,7 +150,7 @@
       { note: 'Training compute, and the Chinchilla rule of thumb:', tex: 'C\\approx 6ND\\ \\text{FLOPs},\\qquad D_{\\text{opt}}\\approx 20N' },
       { note: 'KV-cache size (the 2 is one K plus one V):', tex: '\\text{bytes}=2\\times\\text{layers}\\times\\text{KV heads}\\times d_{\\text{head}}\\times\\text{seq len}\\times\\text{batch}\\times\\text{bytes per value}' },
     ],
-    tryit: [],
+    tryit: LLM.real && LLM.real.hasModel ? [LLM.real.samplingWidget] : [],
     leaves: ['The next-token probabilities in the hero animation are written for illustration.', 'Real decoding stacks add repetition penalties, stop sequences, min-p and constrained grammars.', 'Scaling-law constants depend on data and architecture; the fit here is one paper’s, not a universal law.', 'The KV cache also stores nothing for MLP layers; only attention needs past tokens.'],
     quiz: [
       { q: 'A 7B-parameter model is trained on 2T tokens. Roughly how much training compute?', opts: ['≈ 8 × 10²² FLOPs', '≈ 1.4 × 10¹³ FLOPs', '≈ 8 × 10²⁵ FLOPs', '≈ 4 × 10¹⁸ FLOPs'], a: 0, why: '6 × 7×10⁹ × 2×10¹² = 8.4 × 10²² FLOPs.' },

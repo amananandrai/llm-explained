@@ -103,6 +103,7 @@
     maths: [
       { note: 'The whole forward pass for one block, in the notation of the course:', tex: '\\begin{aligned}x_0&=E[\\text{ids}]\\\\ x\'&=x+W_O\\,\\mathrm{GQA}\\big(\\mathrm{RoPE}(\\mathrm{RMSNorm}(x)W_Q),\\ \\mathrm{RoPE}(\\mathrm{RMSNorm}(x)W_K),\\ \\mathrm{RMSNorm}(x)W_V\\big)\\\\ x\'\'&=x\'+\\sum_{i\\in\\mathrm{TopK}}g_i\\,\\mathrm{SwiGLU}_i\\big(\\mathrm{RMSNorm}(x\')\\big)\\\\ p&=\\mathrm{softmax}\\big(E\\,\\mathrm{RMSNorm}(x_L)/T\\big)\\end{aligned}' },
     ],
+    tryit: LLM.real && LLM.real.hasModel ? [LLM.real.journeyWidget] : [],
     leaves: ['The tiny model has one block, no MoE and random weights; it shows mechanics, not behaviour.', 'Hero numbers are representative, not a recorded run.', 'A production request also passes through safety filters, rate limiting and billing that are only sketched here.'],
     quiz: [
       { q: 'Which step turns the final hidden vector into a probability for every token?', opts: ['RoPE', 'The unembedding (logits) and softmax', 'The KV cache', 'RRF'], a: 1, why: 'h_last × Eᵀ gives logits; softmax with temperature gives probabilities.' },

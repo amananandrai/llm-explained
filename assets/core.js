@@ -562,10 +562,12 @@
     if (!loaded[file]) loaded[file] = new Promise((res, rej) => { const sc = h('script', { src: file }); sc.onload = res; sc.onerror = rej; document.body.appendChild(sc); });
     return loaded[file];
   }
+  const REAL_MODULES = ['3', '5', '7', '41'];
   function cellFile(id) { const n = parseInt(id, 10); return 'assets/py/cells-' + (n <= 9 ? 'a' : n <= 20 ? 'b' : 'c') + '.js'; }
   function loadModule(id) {
     const py = Promise.all([loadScriptOnce('assets/pycell.js'), loadScriptOnce(cellFile(id))]).catch(() => null); // optional extras
-    return Promise.all([loadScriptOnce('assets/m/m' + id + '.js'), py]).then(() => LLM.modules[id]);
+    const real = REAL_MODULES.includes(id) ? loadScriptOnce('assets/real.js').catch(() => null) : null; // real tokenizers and model
+    return Promise.all([py, real]).then(() => loadScriptOnce('assets/m/m' + id + '.js')).then(() => LLM.modules[id]);
   }
   LLM.mod = (id, def) => { LLM.modules[id] = def; };
   let current = null;
